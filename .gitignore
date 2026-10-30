@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+bin/
+git.zip
+ngrok.zip
+configs/tma_url.txt
+*.log

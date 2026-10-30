@@ -1,0 +1,77 @@
+{
+  "description": "Comprehensive list of cointegration candidate pairs by sector for Bybit USDT Perpetuals",
+  "candidate_pairs": [
+    {
+      "sector": "AI / Compute",
+      "leg1": "NEARUSDT",
+      "leg2": "RENDERUSDT",
+      "rationale": "Leading decentralized AI and GPU compute narrative"
+    },
+    {
+      "sector": "AI / Compute",
+      "leg1": "GRTUSDT",
+      "leg2": "RENDERUSDT",
+      "rationale": "AI data indexing and decentralized render compute"
+    },
+    {
+      "sector": "Move-VM L1s",
+      "leg1": "SUIUSDT",
+      "leg2": "APTUSDT",
+      "rationale": "Move-language high-throughput next-gen L1 chains"
+    },
+    {
+      "sector": "Next-Gen L1s",
+      "leg1": "SUIUSDT",
+      "leg2": "SEIUSDT",
+      "rationale": "Parallel execution alternative layer 1 networks"
+    },
+    {
+      "sector": "L1 High-Beta",
+      "leg1": "SOLUSDT",
+      "leg2": "AVAXUSDT",
+      "rationale": "Alternative high-performance smart contract ecosystems"
+    },
+    {
+      "sector": "Ethereum L2s",
+      "leg1": "ARBUSDT",
+      "leg2": "OPUSDT",
+      "rationale": "Leading Ethereum optimistic rollups"
+    },
+    {
+      "sector": "DeFi Bluechips",
+      "leg1": "UNIUSDT",
+      "leg2": "AAVEUSDT",
+      "rationale": "Ethereum premier DEX and Lending protocol tokens"
+    },
+    {
+      "sector": "DeFi & Cross-Chain",
+      "leg1": "INJUSDT",
+      "leg2": "RUNEUSDT",
+      "rationale": "Cosmos-based DeFi infrastructure and liquidity chains"
+    },
+    {
+      "sector": "Liquid Staking & Gov",
+      "leg1": "LDOUSDT",
+      "leg2": "MKRUSDT",
+      "rationale": "Ethereum governance and staking bluechips"
+    },
+    {
+      "sector": "Cross-Chain / Interop",
+      "leg1": "LINKUSDT",
+      "leg2": "DOTUSDT",
+      "rationale": "Foundational oracle and interoperability protocols"
+    },
+    {
+      "sector": "Modular Ecosystem",
+      "leg1": "TIAUSDT",
+      "leg2": "ATOMUSDT",
+      "rationale": "Data availability and Cosmos IBC ecosystem"
+    },
+    {
+      "sector": "Meme Giants",
+      "leg1": "DOGEUSDT",
+      "leg2": "1000SHIBUSDT",
+      "rationale": "Top liquidity dog meme coins on Bybit"
+    }
+  ]
+}

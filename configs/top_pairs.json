@@ -1,0 +1,44 @@
+{
+  "top_pairs": [
+    {
+      "sector": "AI / Compute",
+      "leg1": "NEARUSDT",
+      "leg2": "RENDERUSDT",
+      "return_pct": 6.04,
+      "win_rate_pct": 65.22,
+      "sharpe": 2.36
+    },
+    {
+      "sector": "AI / Compute",
+      "leg1": "GRTUSDT",
+      "leg2": "RENDERUSDT",
+      "return_pct": 4.69,
+      "win_rate_pct": 57.69,
+      "sharpe": 1.79
+    },
+    {
+      "sector": "L1 High-Beta",
+      "leg1": "SOLUSDT",
+      "leg2": "AVAXUSDT",
+      "return_pct": 3.0,
+      "win_rate_pct": 54.17,
+      "sharpe": 1.84
+    },
+    {
+      "sector": "DeFi & Cross-Chain",
+      "leg1": "INJUSDT",
+      "leg2": "RUNEUSDT",
+      "return_pct": 1.94,
+      "win_rate_pct": 57.14,
+      "sharpe": 0.72
+    },
+    {
+      "sector": "Next-Gen L1s",
+      "leg1": "SUIUSDT",
+      "leg2": "SEIUSDT",
+      "return_pct": 1.31,
+      "win_rate_pct": 66.67,
+      "sharpe": 0.76
+    }
+  ]
+}

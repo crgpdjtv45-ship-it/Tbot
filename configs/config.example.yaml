@@ -1,0 +1,41 @@
+# Configuration for Bybit Statistical Arbitrage Bot
+
+bybit:
+  testnet: true                        # Set true for Testnet, false for Real account
+  api_key: ""                          # Bybit API Key
+  api_secret: ""                       # Bybit API Secret
+  category: "linear"                   # 'linear' for USDT/USDC Perpetual Futures
+  recv_window: 5000
+
+strategy:
+  # Pair parameters
+  timeframe: "60"                      # Candle timeframe: 15, 60 (1h), 240 (4h), D
+  lookback_days: 60                    # Historical days used for cointegration & hedge ratio
+  
+  # Statistical arbitrage signals
+  entry_z_score: 2.0                   # Enter trade when |Z| >= entry_z_score
+  exit_z_score: 0.2                    # Exit trade when |Z| <= exit_z_score (mean reversion)
+  stop_loss_z_score: 3.8               # Emergency stop when |Z| >= stop_loss_z_score
+  max_half_life_days: 7.0              # Max half life for cointegrated spread to revert
+  p_value_threshold: 0.05              # ADF cointegration p-value threshold (0.05 = 95% confidence)
+  
+  # Hedge Ratio model
+  hedge_ratio_method: "kalman"         # 'kalman' (dynamic adaptive) or 'ols' (static linear regression)
+
+risk:
+  max_open_pairs: 3                    # Maximum simultaneous pair positions
+  capital_per_pair_pct: 15.0           # Max % of equity allocated per pair trade (e.g. 15%)
+  leverage: 2                          # Conservative leverage for pairs trading (1x - 3x recommended)
+  max_account_drawdown_pct: 10.0       # Stop all trading if total account equity drops by 10%
+  slippage_tolerance_pct: 0.2          # Max slippage when executing legs
+
+telegram:
+  enabled: false
+  bot_token: ""                        # Telegram Bot Token from @BotFather
+  chat_id: ""                          # Your Telegram Chat ID
+  alerts:
+    on_signal: true
+    on_entry: true
+    on_exit: true
+    on_error: true
+    daily_summary: true
