@@ -544,6 +544,3 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
     return app
-
-# Default top-level ASGI instance for cloud platforms (Render, Railway, Uvicorn)
-app = create_app()

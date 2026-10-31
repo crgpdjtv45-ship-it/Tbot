@@ -1,8 +1,9 @@
+bin/
+.venv/
 __pycache__/
 *.pyc
-.venv/
-bin/
-git.zip
+*.zip
+*.exe
 ngrok.zip
-configs/tma_url.txt
-*.log
+git.zip
+bore.exe
