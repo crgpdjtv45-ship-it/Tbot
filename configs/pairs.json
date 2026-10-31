@@ -1,77 +1,180 @@
 {
-  "description": "Comprehensive list of cointegration candidate pairs by sector for Bybit USDT Perpetuals",
+  "description": "Institutional Quantitative Universe of Cointegrated Pairs on Bybit USDT Linear Perpetuals",
   "candidate_pairs": [
     {
-      "sector": "AI / Compute",
+      "sector": "AI & GPU Compute",
       "leg1": "NEARUSDT",
       "leg2": "RENDERUSDT",
-      "rationale": "Leading decentralized AI and GPU compute narrative"
+      "category": "crypto",
+      "rationale": "Leading decentralized AI compute and GPU rendering networks"
     },
     {
-      "sector": "AI / Compute",
+      "sector": "AI & GPU Compute",
       "leg1": "GRTUSDT",
       "leg2": "RENDERUSDT",
-      "rationale": "AI data indexing and decentralized render compute"
+      "category": "crypto",
+      "rationale": "Decentralized AI data indexing and GPU compute rendering"
     },
     {
-      "sector": "Move-VM L1s",
-      "leg1": "SUIUSDT",
-      "leg2": "APTUSDT",
-      "rationale": "Move-language high-throughput next-gen L1 chains"
+      "sector": "AI & GPU Compute",
+      "leg1": "FETUSDT",
+      "leg2": "RENDERUSDT",
+      "category": "crypto",
+      "rationale": "Artificial Superintelligence Alliance and decentralized compute"
     },
     {
-      "sector": "Next-Gen L1s",
-      "leg1": "SUIUSDT",
-      "leg2": "SEIUSDT",
-      "rationale": "Parallel execution alternative layer 1 networks"
-    },
-    {
-      "sector": "L1 High-Beta",
-      "leg1": "SOLUSDT",
-      "leg2": "AVAXUSDT",
-      "rationale": "Alternative high-performance smart contract ecosystems"
-    },
-    {
-      "sector": "Ethereum L2s",
+      "sector": "Ethereum Layer 2s",
       "leg1": "ARBUSDT",
       "leg2": "OPUSDT",
-      "rationale": "Leading Ethereum optimistic rollups"
+      "category": "crypto",
+      "rationale": "Canonical Ethereum Optimistic Rollups duopoly"
+    },
+    {
+      "sector": "Ethereum Layer 2s",
+      "leg1": "POLUSDT",
+      "leg2": "OPUSDT",
+      "category": "crypto",
+      "rationale": "Polygon 2.0 aggregated ZK and Optimism Superchain"
+    },
+    {
+      "sector": "Next-Gen L1 & Move VM",
+      "leg1": "SUIUSDT",
+      "leg2": "APTUSDT",
+      "category": "crypto",
+      "rationale": "Move-VM high-throughput next-generation L1 blockchains"
+    },
+    {
+      "sector": "Next-Gen L1 & Move VM",
+      "leg1": "SUIUSDT",
+      "leg2": "SEIUSDT",
+      "category": "crypto",
+      "rationale": "Parallelized EVM/Move high-speed execution L1 networks"
+    },
+    {
+      "sector": "Alternative L1 Giants",
+      "leg1": "SOLUSDT",
+      "leg2": "AVAXUSDT",
+      "category": "crypto",
+      "rationale": "Premier high-beta alternative smart contract ecosystems"
     },
     {
       "sector": "DeFi Bluechips",
       "leg1": "UNIUSDT",
       "leg2": "AAVEUSDT",
-      "rationale": "Ethereum premier DEX and Lending protocol tokens"
+      "category": "crypto",
+      "rationale": "Top decentralized exchange and premier lending protocol"
     },
     {
-      "sector": "DeFi & Cross-Chain",
-      "leg1": "INJUSDT",
-      "leg2": "RUNEUSDT",
-      "rationale": "Cosmos-based DeFi infrastructure and liquidity chains"
+      "sector": "DeFi & Yield Governance",
+      "leg1": "MKRUSDT",
+      "leg2": "LDOUSDT",
+      "category": "crypto",
+      "rationale": "Ethereum governance giants, liquid staking and decentralized stablecoins"
     },
     {
-      "sector": "Liquid Staking & Gov",
-      "leg1": "LDOUSDT",
-      "leg2": "MKRUSDT",
-      "rationale": "Ethereum governance and staking bluechips"
+      "sector": "DeFi Liquidity Duopoly",
+      "leg1": "CRVUSDT",
+      "leg2": "CVXUSDT",
+      "category": "crypto",
+      "rationale": "Deeply linked Curve automated market maker and Convex yield booster"
     },
     {
-      "sector": "Cross-Chain / Interop",
+      "sector": "Infrastructure & Oracles",
       "leg1": "LINKUSDT",
       "leg2": "DOTUSDT",
-      "rationale": "Foundational oracle and interoperability protocols"
+      "category": "crypto",
+      "rationale": "Industry-standard Web3 oracle network and cross-chain interoperability"
     },
     {
       "sector": "Modular Ecosystem",
       "leg1": "TIAUSDT",
       "leg2": "ATOMUSDT",
-      "rationale": "Data availability and Cosmos IBC ecosystem"
+      "category": "crypto",
+      "rationale": "Data availability layer and Cosmos IBC ecosystem hub"
+    },
+    {
+      "sector": "DeFi Cross-Chain",
+      "leg1": "INJUSDT",
+      "leg2": "RUNEUSDT",
+      "category": "crypto",
+      "rationale": "Cosmos-based DeFi infrastructure and native cross-chain liquidity"
+    },
+    {
+      "sector": "Decentralized Storage",
+      "leg1": "FILUSDT",
+      "leg2": "ARUSDT",
+      "category": "crypto",
+      "rationale": "Leading decentralized storage networks (Filecoin & Arweave permanent web)"
     },
     {
       "sector": "Meme Giants",
       "leg1": "DOGEUSDT",
       "leg2": "1000SHIBUSDT",
-      "rationale": "Top liquidity dog meme coins on Bybit"
+      "category": "crypto",
+      "rationale": "Top liquidity dog meme coins with high retail beta co-movement"
+    },
+    {
+      "sector": "Meme Culture",
+      "leg1": "1000PEPEUSDT",
+      "leg2": "1000FLOKIUSDT",
+      "category": "crypto",
+      "rationale": "Next-generation meme coin liquidity leaders"
+    },
+    {
+      "sector": "Macro Crypto Benchmark",
+      "leg1": "BTCUSDT",
+      "leg2": "ETHUSDT",
+      "category": "crypto",
+      "rationale": "Macro cryptocurrency institutional baseline pair"
+    },
+    {
+      "sector": "Macro Crypto Benchmark",
+      "leg1": "ETHUSDT",
+      "leg2": "SOLUSDT",
+      "category": "crypto",
+      "rationale": "Core smart contract platform capital rotation pair"
+    },
+    {
+      "sector": "Precious Metals",
+      "leg1": "XAUUSDT",
+      "leg2": "XAGUSDT",
+      "category": "tradfi",
+      "rationale": "Centuries-tested Gold vs Silver cointegration and mean-reverting ratio"
+    },
+    {
+      "sector": "US Stock Indices",
+      "leg1": "SPYUSDT",
+      "leg2": "QQQUSDT",
+      "category": "tradfi",
+      "rationale": "Broad market S&P 500 ETF vs Technology NASDAQ 100 ETF"
+    },
+    {
+      "sector": "Global Currencies (Forex)",
+      "leg1": "EURUSDUSDT",
+      "leg2": "GBPUSDUSDT",
+      "category": "tradfi",
+      "rationale": "European currency majors vs US Dollar"
+    },
+    {
+      "sector": "Crypto Institutional Equities",
+      "leg1": "COINUSDT",
+      "leg2": "MSTRUSDT",
+      "category": "tradfi",
+      "rationale": "Coinbase Exchange vs MicroStrategy Bitcoin treasury equity"
+    },
+    {
+      "sector": "Semiconductors Duopoly",
+      "leg1": "NVDAUSDT",
+      "leg2": "AMDSTOCKUSDT",
+      "category": "tradfi",
+      "rationale": "Global GPU and AI processor market leaders"
+    },
+    {
+      "sector": "Mega-Cap Tech",
+      "leg1": "TSLAUSDT",
+      "leg2": "AAPLUSDT",
+      "category": "tradfi",
+      "rationale": "US mega-cap consumer technology leaders"
     }
   ]
 }
