@@ -127,14 +127,12 @@ class TelegramReporter:
                 return
 
             text = (
-                "🤖 <b>Bybit StatArb Institutional Autopilot</b>\n"
-                "─────────────────────────\n"
-                "Квантовый робот статистического арбитража запущен и работает в облаке.\n\n"
-                "• <b>Фокус:</b> 11 TradFi пар (Золото, Серебро, Нефть, S&P 500, NASDAQ, Forex) + 5 Bluechips\n"
-                "• <b>Стратегия:</b> Дельта-нейтральный спред, коинтеграция Bybit V5\n"
-                "• <b>Депозит:</b> Демо-счет Bybit ($10,000.00 USDT)\n"
-                "• <b>Статус:</b> 🟢 Онлайн / Автопилот активен\n\n"
-                "Нажмите кнопку ниже, чтобы открыть графический терминал управления:"
+                "<b>Bybit StatArb • Торговый терминал</b>\n\n"
+                "• <b>Стратегия:</b> Статистический арбитраж (дельта-нейтрально)\n"
+                "• <b>Инструменты:</b> 11 TradFi + 5 Криптовалют\n"
+                "• <b>Депозит:</b> $10,000.00 USDT (Paper Trading)\n"
+                "• <b>Статус:</b> Активен\n\n"
+                "Для управления и мониторинга нажмите кнопку ниже:"
             )
             await message.reply(text, reply_markup=self._get_main_keyboard(), parse_mode=ParseMode.HTML)
 
@@ -150,17 +148,15 @@ class TelegramReporter:
             is_paused = state.get("is_kill_switch_active", False)
 
             pnl_sign = "+" if pnl >= 0 else ""
-            status_emoji = "🟡 НА ПАУЗЕ" if is_paused else "🟢 АКТИВЕН (АВТОПИЛОТ)"
+            status_text = "На паузе" if is_paused else "Активна"
 
             text = (
-                "📊 <b>Текущий статус робота Bybit:</b>\n"
-                "─────────────────────────\n"
-                f"• <b>Автопилот:</b> {status_emoji}\n"
-                f"• <b>Баланс:</b> ${balance:,.2f} USDT\n"
-                f"• <b>Нереализованный PnL:</b> {pnl_sign}${pnl:,.2f} USDT\n"
+                "<b>Текущий статус:</b>\n"
+                f"• <b>Авто-торговля:</b> {status_text}\n"
+                f"• <b>Баланс депозита:</b> ${balance:,.2f} USDT\n"
+                f"• <b>Нереализованный P&L:</b> {pnl_sign}${pnl:,.2f} USDT\n"
                 f"• <b>Открытых позиций:</b> {active_cnt}\n"
-                f"• <b>Всего отслеживается пар:</b> 16 инструментов\n"
-                "─────────────────────────"
+                f"• <b>Мониторинг инструментов:</b> 16 пар"
             )
             await message.reply(text, reply_markup=self._get_main_keyboard(), parse_mode=ParseMode.HTML)
 
@@ -195,13 +191,12 @@ class TelegramReporter:
             await message.reply(welcome_text, reply_markup=self._get_main_keyboard(), parse_mode=ParseMode.HTML)
 
     def notify_entry(self, pos: Dict[str, Any]):
-        """Оповещение об открытии арбитражного хэджа."""
         if not self.enabled:
             return
 
         pair = pos.get("pair", "")
         clean_name = pair.replace("USDT", "").replace("STOCK", "")
-        side_str = "SHORT A / LONG B" if pos.get("side") == -1 else "LONG A / SHORT B"
+        side_str = "Short A / Long B" if pos.get("side") == -1 else "Long A / Short B"
         z = pos.get("entry_z", 0.0)
         cap = pos.get("capital", 2000.0)
 
@@ -213,21 +208,16 @@ class TelegramReporter:
         symb = pos.get("symbol_b", "").replace("USDT", "")
 
         text = (
-            f"⚡ <b>ВХОД В АРБИТРАЖ • Bybit V5</b>\n"
-            f"─────────────────────────\n"
-            f"<b>Инструмент:</b> {clean_name}\n"
-            f"<b>Сигнал расхождения:</b> Z = {z:+.2f}σ\n"
-            f"<b>Стратегия:</b> {side_str} (Дельта-нейтрально)\n"
-            f"• <b>Нога A:</b> {qa} {syma} по ${pa:,.2f}\n"
-            f"• <b>Нога B:</b> {qb} {symb} по ${pb:,.2f}\n"
-            f"<b>Выделенный капитал:</b> ${cap:,.2f} USDT (20% депо)\n"
-            f"─────────────────────────\n"
-            f"🛡 <i>Позиция захеджирована от общих движений рынка.</i>"
+            f"<b>[ОРДЕР] Открыта позиция {clean_name}</b>\n\n"
+            f"• <b>Сигнал:</b> Z = {z:+.2f}σ\n"
+            f"• <b>Направление:</b> {side_str}\n"
+            f"• <b>Нога 1:</b> {pos.get('side_a', 'Leg A')} {qa} {syma} (${pa:,.2f})\n"
+            f"• <b>Нога 2:</b> {pos.get('side_b', 'Leg B')} {qb} {symb} (${pb:,.2f})\n"
+            f"• <b>Выделенный объем:</b> ${cap:,.2f} USDT"
         )
         self.send_sync_message(text)
 
     def notify_exit(self, pos: Dict[str, Any], pnl: float, reason: str, balance: float):
-        """Оповещение о закрытии арбитражной позиции с фиксацией прибыли/убытка."""
         if not self.enabled:
             return
 
@@ -236,16 +226,11 @@ class TelegramReporter:
         pnl_sign = "+" if pnl >= 0 else ""
         cap = pos.get("capital", 2000.0)
         pnl_pct = (pnl / cap) * 100.0 if cap > 0 else 0.0
-        emoji = "✅" if pnl >= 0 else "⚠️"
 
         text = (
-            f"{emoji} <b>АРБИТРАЖ ЗАКРЫТ • Bybit V5</b>\n"
-            f"─────────────────────────\n"
-            f"<b>Инструмент:</b> {clean_name}\n"
-            f"<b>Результат (PnL):</b> <b>{pnl_sign}${pnl:,.2f} ({pnl_sign}{pnl_pct:.2f}%)</b>\n"
-            f"<b>Причина выхода:</b> {reason}\n"
-            f"<b>Текущий баланс:</b> ${balance:,.2f} USDT\n"
-            f"─────────────────────────\n"
-            f"📈 <i>Прибыль зафиксирована на балансе. Алгоритм вернулся к сканированию.</i>"
+            f"<b>[ЗАКРЫТИЕ] Позиция {clean_name} закрыта</b>\n\n"
+            f"• <b>Результат (P&L):</b> {pnl_sign}${pnl:,.2f} ({pnl_sign}{pnl_pct:.2f}%)\n"
+            f"• <b>Причина:</b> {reason}\n"
+            f"• <b>Баланс депозита:</b> ${balance:,.2f} USDT"
         )
         self.send_sync_message(text)

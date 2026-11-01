@@ -389,9 +389,9 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
 
     # System Live Event Logs
     live_event_logs = [
-        {"time": time.strftime("%H:%M:%S"), "type": "info", "msg": "🚀 Квантовый скринер Bybit V5 запущен"},
-        {"time": time.strftime("%H:%M:%S"), "type": "info", "msg": "📊 Загружено 11 TradFi инструментов и 5 институциональных пар"},
-        {"time": time.strftime("%H:%M:%S"), "type": "info", "msg": "🛡 Дельта-нейтральная защита активна: ожидание расхождения |Z| >= 2.0σ"}
+        {"time": time.strftime("%H:%M:%S"), "type": "info", "msg": "Модуль статистического арбитража запущен"},
+        {"time": time.strftime("%H:%M:%S"), "type": "info", "msg": "Загружено 16 инструментов (11 TradFi, 5 Crypto)"},
+        {"time": time.strftime("%H:%M:%S"), "type": "info", "msg": "Поток рыночных котировок Bybit V5 подключен"}
     ]
 
     # Background Live Bybit Ticker & Autonomous StatArb Engine
@@ -593,7 +593,7 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                     ps = active_pair_registry.get(pair_sample)
                     if ps and ps.get("price_a") and ps.get("price_b"):
                         clean_name = pair_sample.replace("USDT", "")
-                        msg = f"Bybit V5: {clean_name} — A: ${ps['price_a']:,.2f}, B: ${ps['price_b']:,.2f} | Z={ps['current_z']:+.2f}σ"
+                        msg = f"{clean_name} — A: ${ps['price_a']:,.2f}, B: ${ps['price_b']:,.2f} | Z={ps['current_z']:+.2f}σ"
                         live_event_logs.insert(0, {"time": now_str, "type": "scan", "msg": msg})
                         if len(live_event_logs) > 40:
                             live_event_logs.pop()
