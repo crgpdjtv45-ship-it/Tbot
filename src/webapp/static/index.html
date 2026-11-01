@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Bybit StatArb | Статистический арбитраж</title>
+  <title>Bybit StatArb | Торговый терминал</title>
   
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -16,11 +16,8 @@
         extend: {
           colors: {
             brand: '#38BDF8',
-            brandDark: '#0B0F19',
-            cardBg: '#111827',
-            cardBorder: '#1F2937',
-            profit: '#10B981',
-            loss: '#EF4444'
+            profit: '#34D399',
+            loss: '#F87171'
           }
         }
       }
@@ -29,69 +26,79 @@
 
   <style>
     body {
-      background-color: #0B0F19;
-      color: #E5E7EB;
+      background-color: #000000;
+      color: #E5E5E5;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
-    .glass-card {
-      background: #111827;
-      border: 1px solid #1F2937;
-      border-radius: 16px;
+    .panel-card {
+      background: #0A0A0A;
+      border: 1px solid #1C1C1C;
+      border-radius: 14px;
+    }
+    .inner-card {
+      background: #121212;
+      border: 1px solid #222222;
+      border-radius: 10px;
     }
     .switch {
       position: relative;
       display: inline-block;
-      width: 44px;
-      height: 24px;
+      width: 42px;
+      height: 22px;
     }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
       position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #374151; transition: .25s; border-radius: 24px;
+      background-color: #262626; transition: .2s; border-radius: 22px;
     }
     .slider:before {
-      position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
-      background-color: white; transition: .25s; border-radius: 50%;
+      position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+      background-color: #E5E5E5; transition: .2s; border-radius: 50%;
     }
     input:checked + .slider { background-color: #10B981; }
     input:checked + .slider:before { transform: translateX(20px); }
+
+    /* Clean subtle scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: #000000; }
+    ::-webkit-scrollbar-thumb { background: #262626; border-radius: 2px; }
   </style>
 </head>
-<body class="max-w-md mx-auto p-4 pb-12 space-y-3.5 antialiased text-sm">
+<body class="max-w-md mx-auto p-3.5 pb-10 space-y-3 antialiased text-sm">
 
   <!-- ШАПКА -->
-  <header class="flex items-center justify-between pt-1">
+  <header class="flex items-center justify-between pt-0.5">
     <div>
-      <h1 class="text-base font-bold text-white tracking-tight">Bybit StatArb</h1>
-      <p class="text-[11px] text-gray-400">Статистический арбитраж • Bybit V5 Linear</p>
+      <h1 class="text-sm font-bold text-white tracking-tight">Bybit StatArb</h1>
+      <p class="text-[10px] text-neutral-500">Статистический арбитраж • Bybit V5 Linear</p>
     </div>
-    <div id="liveBadge" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-950/70 border border-emerald-800 text-emerald-400 text-xs font-medium">
+    <div id="liveBadge" class="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/40 border border-emerald-900/60 text-emerald-400 text-[11px] font-medium">
       <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
       <span id="liveStatusText">Активен</span>
     </div>
   </header>
 
   <!-- БАЛАНС И СТАТУС -->
-  <div class="glass-card p-4 space-y-3">
+  <div class="panel-card p-3.5 space-y-3">
     <div class="flex items-center justify-between">
       <div>
-        <div class="text-[11px] text-gray-400 font-medium">Баланс депозита</div>
+        <div class="text-[11px] text-neutral-400 font-medium">Баланс депозита</div>
         <div id="balanceVal" class="text-2xl font-bold text-white mt-0.5 tracking-tight font-mono">$10,000.00</div>
-        <div class="text-[10px] text-gray-500 mt-0.5">Режим: Paper Trading (симуляция)</div>
+        <div class="text-[10px] text-neutral-500 mt-0.5">Режим: Paper Trading (симуляция)</div>
       </div>
       <div class="text-right">
-        <div class="text-[11px] text-gray-400 font-medium">Нереализованный P&L</div>
-        <div id="totalProfitVal" class="text-lg font-bold text-gray-400 mt-0.5 font-mono">$0.00 (0.0%)</div>
+        <div class="text-[11px] text-neutral-400 font-medium">Нереализованный P&L</div>
+        <div id="totalProfitVal" class="text-lg font-bold text-neutral-400 mt-0.5 font-mono">$0.00 (0.0%)</div>
       </div>
     </div>
 
     <!-- ПЕРЕКЛЮЧАТЕЛЬ АВТО-ТОРГОВЛИ -->
-    <div class="p-3 rounded-xl bg-gray-900 border border-cardBorder flex items-center justify-between">
+    <div class="p-2.5 inner-card flex items-center justify-between">
       <div>
         <div class="text-xs font-semibold text-white">Автоматическая торговля</div>
-        <p id="autopilotDesc" class="text-[10px] text-gray-400">Мониторинг 16 инструментов и вход при |Z| ≥ 2.0</p>
+        <p id="autopilotDesc" class="text-[10px] text-neutral-400">Мониторинг 16 инструментов и вход при |Z| ≥ 2.0</p>
       </div>
       <label class="switch">
         <input type="checkbox" id="autopilotToggle" checked onchange="toggleAutopilot(this.checked)">
@@ -101,110 +108,110 @@
   </div>
 
   <!-- ОТКРЫТЫЕ ПОЗИЦИИ -->
-  <div class="glass-card p-4 space-y-3">
+  <div class="panel-card p-3.5 space-y-2.5">
     <div class="flex items-center justify-between">
-      <div class="text-xs font-semibold text-gray-300 uppercase tracking-wider">Открытые позиции</div>
-      <span id="posCountBadge" class="text-[10px] px-2 py-0.5 rounded-md bg-gray-800 text-gray-400 font-mono">0</span>
+      <div class="text-xs font-semibold text-neutral-300 uppercase tracking-wider">Открытые позиции</div>
+      <span id="posCountBadge" class="text-[10px] px-2 py-0.5 rounded inner-card text-neutral-400 font-mono">0</span>
     </div>
 
     <div id="activePositionContainer">
-      <div class="p-4 rounded-xl bg-gray-900/60 border border-cardBorder text-center text-xs text-gray-500">
+      <div class="p-3.5 inner-card text-center text-xs text-neutral-500">
         Нет открытых позиций. Спреды инструментов в норме.
       </div>
     </div>
 
     <!-- ТЕСТОВЫЕ КНОПКИ ДЛЯ ПРОВЕРКИ -->
-    <div id="testButtonsContainer" class="pt-1 grid grid-cols-2 gap-2">
-      <button onclick="openSimulationTrade('BTCUSDT/ETHUSDT')" class="py-2 px-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-cardBorder text-gray-200 text-xs font-medium flex items-center justify-center space-x-1 transition-all active:scale-[0.98]">
+    <div id="testButtonsContainer" class="pt-0.5 grid grid-cols-2 gap-2">
+      <button onclick="openSimulationTrade('BTCUSDT/ETHUSDT')" class="py-2 px-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 text-xs font-medium flex items-center justify-center space-x-1 transition-all active:scale-[0.98]">
         <span>Тест: BTC / ETH</span>
       </button>
-      <button onclick="openSimulationTrade('XAUUSDT/XAGUSDT')" class="py-2 px-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-cardBorder text-gray-200 text-xs font-medium flex items-center justify-center space-x-1 transition-all active:scale-[0.98]">
+      <button onclick="openSimulationTrade('XAUUSDT/XAGUSDT')" class="py-2 px-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-200 text-xs font-medium flex items-center justify-center space-x-1 transition-all active:scale-[0.98]">
         <span>Тест: Золото / Серебро</span>
       </button>
     </div>
   </div>
 
   <!-- СКРИНЕР ИНСТРУМЕНТОВ -->
-  <div class="glass-card p-4 space-y-3">
+  <div class="panel-card p-3.5 space-y-2.5">
     <div class="flex items-center justify-between">
       <div>
-        <div class="text-xs font-semibold text-gray-300 uppercase tracking-wider">Скринер спредов</div>
-        <div class="text-[10px] text-gray-500">Котировки обновляются в реальном времени</div>
+        <div class="text-xs font-semibold text-neutral-300 uppercase tracking-wider">Скринер спредов</div>
+        <div class="text-[10px] text-neutral-500">Котировки обновляются в реальном времени</div>
       </div>
-      <span class="text-[10px] px-2 py-0.5 rounded-md bg-gray-800 text-gray-400 font-mono">16 пар</span>
+      <span class="text-[10px] px-2 py-0.5 rounded inner-card text-neutral-400 font-mono">16 пар</span>
     </div>
 
     <!-- Вкладки фильтрации -->
     <div class="flex space-x-1.5 text-xs">
-      <button onclick="filterPairs('all')" id="tab_all" class="px-2.5 py-1 rounded-md bg-brand text-gray-900 font-semibold transition-all">Все (16)</button>
-      <button onclick="filterPairs('tradfi')" id="tab_tradfi" class="px-2.5 py-1 rounded-md bg-gray-800 border border-cardBorder text-gray-300 transition-all">TradFi (11)</button>
-      <button onclick="filterPairs('crypto')" id="tab_crypto" class="px-2.5 py-1 rounded-md bg-gray-800 border border-cardBorder text-gray-300 transition-all">Крипто (5)</button>
+      <button onclick="filterPairs('all')" id="tab_all" class="px-2.5 py-1 rounded bg-brand text-black font-semibold transition-all">Все (16)</button>
+      <button onclick="filterPairs('tradfi')" id="tab_tradfi" class="px-2.5 py-1 rounded bg-neutral-900 border border-neutral-800 text-neutral-300 transition-all">TradFi (11)</button>
+      <button onclick="filterPairs('crypto')" id="tab_crypto" class="px-2.5 py-1 rounded bg-neutral-900 border border-neutral-800 text-neutral-300 transition-all">Крипто (5)</button>
     </div>
 
     <!-- Таблица пар -->
-    <div id="pairsListContainer" class="space-y-1.5 max-h-72 overflow-y-auto pr-1">
-      <div class="text-center py-4 text-xs text-gray-500">Загрузка данных Bybit...</div>
+    <div id="pairsListContainer" class="space-y-1 max-h-64 overflow-y-auto pr-0.5">
+      <div class="text-center py-4 text-xs text-neutral-500">Загрузка данных Bybit...</div>
     </div>
   </div>
 
   <!-- ГРАФИК РАСХОЖДЕНИЯ СПРЕДА -->
-  <div class="glass-card p-4 space-y-2">
+  <div class="panel-card p-3.5 space-y-2">
     <div class="flex items-center justify-between">
       <div>
-        <div class="text-xs font-semibold text-gray-300 uppercase tracking-wider">Динамика спреда</div>
-        <div class="text-[11px] text-brand" id="chartPairTitle">XAUUSDT / XAGUSDT</div>
+        <div class="text-xs font-semibold text-neutral-300 uppercase tracking-wider">Динамика спреда</div>
+        <div class="text-[11px] text-brand font-mono" id="chartPairTitle">XAUUSDT / XAGUSDT</div>
       </div>
-      <span class="text-[11px] px-2 py-0.5 rounded bg-gray-800 text-gray-300 font-mono" id="chartZVal">Z = -0.75σ</span>
+      <span class="text-[11px] px-2 py-0.5 rounded inner-card text-neutral-300 font-mono" id="chartZVal">Z = -0.75σ</span>
     </div>
     
-    <div class="h-36 w-full">
+    <div class="h-32 w-full">
       <canvas id="spreadChart"></canvas>
     </div>
 
-    <div class="flex items-center justify-between text-[10px] text-gray-500 pt-1 border-t border-cardBorder">
+    <div class="flex items-center justify-between text-[9px] text-neutral-500 pt-1 border-t border-neutral-900">
       <span class="text-red-400 font-mono">+2.0σ Верхняя граница</span>
-      <span class="text-cyan-400 font-mono">0.0σ Средняя</span>
+      <span class="text-neutral-400 font-mono">0.0σ Средняя</span>
       <span class="text-emerald-400 font-mono">-2.0σ Нижняя граница</span>
     </div>
   </div>
 
   <!-- ЖУРНАЛ ОПЕРАЦИЙ -->
-  <div class="glass-card p-4 space-y-2">
+  <div class="panel-card p-3.5 space-y-2">
     <div class="flex items-center justify-between">
-      <div class="text-xs font-semibold text-gray-300 uppercase tracking-wider">Журнал операций</div>
-      <span class="text-[10px] text-gray-500 font-mono">Live</span>
+      <div class="text-xs font-semibold text-neutral-300 uppercase tracking-wider">Журнал операций</div>
+      <span class="text-[10px] text-neutral-500 font-mono">Live</span>
     </div>
 
-    <div id="logsConsole" class="p-2.5 rounded-xl bg-black/60 border border-cardBorder font-mono text-[10px] text-gray-400 space-y-1 max-h-32 overflow-y-auto">
-      <div class="text-gray-500">Загрузка журнала событий...</div>
+    <div id="logsConsole" class="p-2.5 rounded-lg bg-black border border-neutral-900 font-mono text-[10px] text-neutral-400 space-y-1 max-h-28 overflow-y-auto">
+      <div class="text-neutral-600">Загрузка журнала событий...</div>
     </div>
   </div>
 
   <!-- ПОДКЛЮЧЕНИЕ РЕАЛЬНОГО СЧЕТА -->
-  <div class="glass-card p-4 space-y-2.5">
+  <div class="panel-card p-3 space-y-2">
     <div class="flex items-center justify-between cursor-pointer" onclick="toggleApiInput()">
       <div>
-        <div class="text-xs font-semibold text-gray-200">Подключение Bybit API</div>
-        <div class="text-[10px] text-gray-500" id="apiKeyStatus">Режим: Paper Trading (симуляция)</div>
+        <div class="text-xs font-semibold text-neutral-300">Подключение Bybit API</div>
+        <div class="text-[10px] text-neutral-500" id="apiKeyStatus">Режим: Paper Trading (симуляция)</div>
       </div>
-      <span id="apiToggleIcon" class="text-xs text-gray-500">▼</span>
+      <span id="apiToggleIcon" class="text-xs text-neutral-500">▼</span>
     </div>
 
-    <div id="apiInputSection" class="hidden space-y-2 pt-2 border-t border-cardBorder">
-      <p class="text-[10px] text-gray-400">
+    <div id="apiInputSection" class="hidden space-y-2 pt-2 border-t border-neutral-900">
+      <p class="text-[10px] text-neutral-400">
         Для перехода на реальный счет укажите API ключи Bybit:
       </p>
-      <input type="text" id="simpleApiKey" placeholder="API Key" class="w-full bg-gray-900 border border-cardBorder rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-brand">
-      <input type="password" id="simpleApiSecret" placeholder="API Secret" class="w-full bg-gray-900 border border-cardBorder rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-brand">
-      <button onclick="saveSimpleKeys()" class="w-full py-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 border border-cardBorder text-white font-semibold text-xs transition-all active:scale-[0.98]">
+      <input type="text" id="simpleApiKey" placeholder="API Key" class="w-full bg-neutral-900 border border-neutral-800 rounded p-2 text-xs text-white focus:outline-none focus:border-brand">
+      <input type="password" id="simpleApiSecret" placeholder="API Secret" class="w-full bg-neutral-900 border border-neutral-800 rounded p-2 text-xs text-white focus:outline-none focus:border-brand">
+      <button onclick="saveSimpleKeys()" class="w-full py-2 rounded bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-white font-medium text-xs transition-all active:scale-[0.98]">
         Сохранить ключи
       </button>
     </div>
   </div>
 
   <!-- КНОПКА ЭКСТРЕННОГО ЗАКРЫТИЯ -->
-  <div class="pt-1">
-    <button onclick="emergencyStop()" class="w-full py-2.5 rounded-xl bg-red-950/40 hover:bg-red-950/70 border border-red-900/60 text-red-400 font-semibold text-xs tracking-wide transition-all active:scale-[0.98]">
+  <div class="pt-0.5">
+    <button onclick="emergencyStop()" class="w-full py-2.5 rounded-xl bg-neutral-950 hover:bg-red-950/40 border border-neutral-800 hover:border-red-900 text-neutral-400 hover:text-red-300 font-medium text-xs tracking-wide transition-all active:scale-[0.98]">
       Закрыть все позиции
     </button>
   </div>
@@ -214,8 +221,8 @@
     if (tg) {
       tg.expand();
       tg.ready();
-      tg.setHeaderColor('#0B0F19');
-      tg.setBackgroundColor('#0B0F19');
+      tg.setHeaderColor('#000000');
+      tg.setBackgroundColor('#000000');
     }
 
     function haptic() {
@@ -245,23 +252,23 @@
             },
             {
               data: Array(40).fill(2.0),
-              borderColor: 'rgba(239, 68, 68, 0.4)',
+              borderColor: 'rgba(248, 113, 113, 0.3)',
               borderWidth: 1,
-              borderDash: [4, 4],
+              borderDash: [3, 3],
               pointRadius: 0,
               fill: false
             },
             {
               data: Array(40).fill(-2.0),
-              borderColor: 'rgba(16, 185, 129, 0.4)',
+              borderColor: 'rgba(52, 211, 153, 0.3)',
               borderWidth: 1,
-              borderDash: [4, 4],
+              borderDash: [3, 3],
               pointRadius: 0,
               fill: false
             },
             {
               data: Array(40).fill(0.0),
-              borderColor: 'rgba(156, 163, 175, 0.25)',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
               borderWidth: 1,
               pointRadius: 0,
               fill: false
@@ -276,8 +283,8 @@
           scales: {
             x: { display: false },
             y: {
-              grid: { color: 'rgba(255, 255, 255, 0.05)' },
-              ticks: { color: '#6B7280', font: { size: 9 } },
+              grid: { color: 'rgba(255, 255, 255, 0.04)' },
+              ticks: { color: '#525252', font: { size: 9 } },
               min: -3.0,
               max: 3.0
             }
@@ -312,9 +319,9 @@
         const btn = document.getElementById(`tab_${t}`);
         if (btn) {
           if (t === type) {
-            btn.className = "px-2.5 py-1 rounded-md bg-brand text-gray-900 font-semibold transition-all";
+            btn.className = "px-2.5 py-1 rounded bg-brand text-black font-semibold transition-all";
           } else {
-            btn.className = "px-2.5 py-1 rounded-md bg-gray-800 border border-cardBorder text-gray-300 transition-all";
+            btn.className = "px-2.5 py-1 rounded bg-neutral-900 border border-neutral-800 text-neutral-300 transition-all";
           }
         }
       });
@@ -338,7 +345,7 @@
       });
 
       if (!filtered.length) {
-        container.innerHTML = '<div class="text-center py-4 text-xs text-gray-500">Нет доступных инструментов</div>';
+        container.innerHTML = '<div class="text-center py-4 text-xs text-neutral-500">Нет доступных инструментов</div>';
         return;
       }
 
@@ -350,25 +357,25 @@
         const z = Number(p.current_z || 0).toFixed(2);
         const isSelected = p.pair === currentSelectedPair;
         
-        let zBadgeClass = "bg-gray-800 text-gray-300 border-gray-700";
-        if (Math.abs(z) >= 1.5) zBadgeClass = "bg-amber-950/80 text-amber-400 border-amber-800";
-        if (Math.abs(z) >= 2.0) zBadgeClass = "bg-red-950/80 text-red-400 border-red-800";
+        let zBadgeClass = "bg-neutral-900 text-neutral-400 border-neutral-800";
+        if (Math.abs(z) >= 1.5) zBadgeClass = "bg-amber-950/40 text-amber-400 border-amber-900/60";
+        if (Math.abs(z) >= 2.0) zBadgeClass = "bg-red-950/40 text-red-400 border-red-900/60";
 
         return `
-          <div onclick="selectPairForChart('${p.pair}')" class="p-2.5 rounded-xl bg-gray-900/80 border ${isSelected ? 'border-brand/70 bg-brand/5' : 'border-cardBorder'} flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all">
+          <div onclick="selectPairForChart('${p.pair}')" class="p-2 rounded-lg bg-neutral-950 border ${isSelected ? 'border-brand/70 bg-neutral-900/60' : 'border-neutral-900'} flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all">
             <div class="space-y-0.5">
               <div class="flex items-center space-x-1.5">
                 <span class="text-xs font-semibold text-white font-mono">${cleanA} / ${cleanB}</span>
-                <span class="text-[9px] px-1.5 py-0.2 rounded bg-gray-800 text-gray-400">${p.sector}</span>
+                <span class="text-[9px] px-1.5 py-0.2 rounded bg-neutral-900 text-neutral-400">${p.sector}</span>
               </div>
-              <div class="flex items-center space-x-2 text-[10px] text-gray-400 font-mono">
-                <span>${cleanA}: <b class="text-gray-200">$${paStr}</b></span>
+              <div class="flex items-center space-x-2 text-[10px] text-neutral-500 font-mono">
+                <span>${cleanA}: <b class="text-neutral-300">$${paStr}</b></span>
                 <span>•</span>
-                <span>${cleanB}: <b class="text-gray-200">$${pbStr}</b></span>
+                <span>${cleanB}: <b class="text-neutral-300">$${pbStr}</b></span>
               </div>
             </div>
             <div class="flex items-center space-x-2">
-              <span class="text-[10px] px-2 py-0.5 rounded border font-mono font-medium ${zBadgeClass}">
+              <span class="text-[10px] px-1.5 py-0.5 rounded border font-mono font-medium ${zBadgeClass}">
                 Z: ${z}σ
               </span>
               <label class="switch scale-75 origin-right" onclick="event.stopPropagation()">
@@ -415,7 +422,7 @@
           pnlEl.className = "text-lg font-bold text-loss mt-0.5 font-mono";
           pnlEl.innerText = `-$${Math.abs(pnl).toFixed(2)}`;
         } else {
-          pnlEl.className = "text-lg font-bold text-gray-400 mt-0.5 font-mono";
+          pnlEl.className = "text-lg font-bold text-neutral-400 mt-0.5 font-mono";
           pnlEl.innerText = "$0.00 (0.0%)";
         }
 
@@ -425,7 +432,7 @@
 
         if (!positions.length) {
           posContainer.innerHTML = `
-            <div class="p-4 rounded-xl bg-gray-900/60 border border-cardBorder text-center text-xs text-gray-500">
+            <div class="p-3.5 inner-card text-center text-xs text-neutral-500">
               Нет открытых позиций. Спреды инструментов в норме.
             </div>
           `;
@@ -438,11 +445,11 @@
             const pnlSign = pnlVal >= 0 ? '+' : '';
 
             return `
-              <div class="p-3.5 rounded-xl bg-gray-900 border border-cardBorder space-y-2.5">
+              <div class="p-3 inner-card space-y-2">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
                     <span class="text-xs font-bold text-white font-mono">${cleanA} / ${cleanB}</span>
-                    <span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-400 font-medium border border-emerald-800">Хедж</span>
+                    <span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950/60 text-emerald-400 font-medium border border-emerald-900/60">Хедж</span>
                   </div>
                   <div class="text-right">
                     <div class="text-sm font-bold ${pnlClass} font-mono">${pnlSign}$${pnlVal.toFixed(2)}</div>
@@ -450,20 +457,20 @@
                   </div>
                 </div>
 
-                <div class="p-2 rounded-lg bg-black/40 border border-cardBorder text-[10px] text-gray-300 font-mono grid grid-cols-2 gap-2">
+                <div class="p-2 rounded bg-black/60 border border-neutral-800 text-[10px] text-neutral-300 font-mono grid grid-cols-2 gap-2">
                   <div>
-                    <div class="text-gray-400">${pos.side_a}: ${pos.qty_a} ${cleanA}</div>
-                    <div class="text-gray-500">Цена: $${pos.current_price_a.toLocaleString()}</div>
+                    <div class="text-neutral-400">${pos.side_a}: ${pos.qty_a} ${cleanA}</div>
+                    <div class="text-neutral-500">Цена: $${pos.current_price_a.toLocaleString()}</div>
                   </div>
                   <div>
-                    <div class="text-gray-400">${pos.side_b}: ${pos.qty_b} ${cleanB}</div>
-                    <div class="text-gray-500">Цена: $${pos.current_price_b.toLocaleString()}</div>
+                    <div class="text-neutral-400">${pos.side_b}: ${pos.qty_b} ${cleanB}</div>
+                    <div class="text-neutral-500">Цена: $${pos.current_price_b.toLocaleString()}</div>
                   </div>
                 </div>
 
-                <div class="flex items-center justify-between pt-1">
-                  <span class="text-[10px] text-gray-500 font-mono">Вход: Z = ${pos.entry_z}σ • Сейчас: Z = ${pos.current_z}σ</span>
-                  <button onclick="closeSingleTrade('${pos.pair}')" class="px-2.5 py-1 rounded bg-gray-800 hover:bg-red-950 hover:text-red-300 border border-cardBorder text-gray-300 text-[10px] font-medium transition-all">
+                <div class="flex items-center justify-between pt-0.5">
+                  <span class="text-[10px] text-neutral-500 font-mono">Вход: Z=${pos.entry_z}σ • Сейчас: Z=${pos.current_z}σ</span>
+                  <button onclick="closeSingleTrade('${pos.pair}')" class="px-2 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-300 text-[10px] font-medium transition-all">
                     Закрыть позицию
                   </button>
                 </div>
@@ -509,9 +516,9 @@
         const container = document.getElementById('logsConsole');
         if (logs.length) {
           container.innerHTML = logs.map(l => {
-            let color = 'text-gray-400';
+            let color = 'text-neutral-400';
             if (l.type === 'trade') color = 'text-brand font-medium';
-            return `<div class="${color}"><span class="text-gray-600">[${l.time}]</span> ${l.msg}</div>`;
+            return `<div class="${color}"><span class="text-neutral-600">[${l.time}]</span> ${l.msg}</div>`;
           }).join('');
         }
       } catch (e) {}
@@ -525,12 +532,12 @@
       const desc = document.getElementById('autopilotDesc');
 
       if (checked) {
-        liveBadge.className = "flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-950/70 border border-emerald-800 text-emerald-400 text-xs font-medium";
+        liveBadge.className = "flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950/40 border border-emerald-900/60 text-emerald-400 text-[11px] font-medium";
         liveStatusText.innerText = "Активен";
         desc.innerText = "Мониторинг 16 инструментов и вход при |Z| ≥ 2.0";
         fetch('/api/resume', {method: 'POST'});
       } else {
-        liveBadge.className = "flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-amber-950/70 border border-amber-800 text-amber-400 text-xs font-medium";
+        liveBadge.className = "flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-amber-950/40 border border-amber-900/60 text-amber-400 text-[11px] font-medium";
         liveStatusText.innerText = "Пауза";
         desc.innerText = "Автоматическая торговля приостановлена";
         fetch('/api/kill', {method: 'POST'});
