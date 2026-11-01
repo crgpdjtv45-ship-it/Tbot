@@ -425,8 +425,16 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                 pass
             return {}
 
+        last_keep_alive = time.time()
         while True:
             try:
+                # Keep Render free tier awake by self-pinging every 8 minutes
+                if time.time() - last_keep_alive > 480:
+                    last_keep_alive = time.time()
+                    try:
+                        urllib.request.urlopen('https://tbot-statarb.onrender.com/api/status', timeout=5)
+                    except Exception:
+                        pass
                 price_map = fetch_tickers_map()
                 now_str = time.strftime("%H:%M:%S")
 
