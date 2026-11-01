@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Bybit StatArb | Автопилот</title>
+  <title>Bybit StatArb | Квантовый Терминал</title>
   
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -47,8 +47,8 @@
     .switch {
       position: relative;
       display: inline-block;
-      width: 52px;
-      height: 28px;
+      width: 46px;
+      height: 24px;
     }
     .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
@@ -56,11 +56,11 @@
       background-color: #374151; transition: .3s; border-radius: 34px;
     }
     .slider:before {
-      position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px;
+      position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px;
       background-color: white; transition: .3s; border-radius: 50%;
     }
     input:checked + .slider { background-color: #10B981; }
-    input:checked + .slider:before { transform: translateX(24px); }
+    input:checked + .slider:before { transform: translateX(22px); }
   </style>
 </head>
 <body class="max-w-md mx-auto p-4 pb-12 space-y-4 antialiased text-sm">
@@ -68,40 +68,40 @@
   <!-- TOP HEADER -->
   <header class="flex items-center justify-between pt-1">
     <div class="flex items-center space-x-2.5">
-      <div class="w-8 h-8 rounded-xl bg-brand/10 border border-brand/30 flex items-center justify-center text-base">
+      <div class="w-9 h-9 rounded-xl bg-brand/10 border border-brand/30 flex items-center justify-center text-lg">
         🤖
       </div>
       <div>
-        <h1 class="text-base font-bold text-white tracking-tight">Квантовый Автопилот</h1>
-        <p class="text-[11px] text-gray-400">Bybit V5 • Без участия человека</p>
+        <h1 class="text-sm font-bold text-white tracking-tight">Bybit StatArb Терминал</h1>
+        <p class="text-[10px] text-gray-400">Поток котировок Bybit V5 • Прямой эфир</p>
       </div>
     </div>
     <div id="liveBadge" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800 text-emerald-400 text-xs font-semibold">
       <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-      <span id="liveStatusText">Работает</span>
+      <span id="liveStatusText">Онлайн</span>
     </div>
   </header>
 
   <!-- CARD 1: MAIN BALANCE & AUTONOMOUS STATUS -->
-  <div class="glass-card p-5 relative overflow-hidden space-y-4">
+  <div class="glass-card p-4 relative overflow-hidden space-y-3">
     <div class="flex items-center justify-between">
       <div>
-        <div class="text-xs text-gray-400 font-medium">Ваш капитал на счете</div>
-        <div id="balanceVal" class="text-3xl font-extrabold text-white mt-1 tracking-tight">$10,024.80</div>
+        <div class="text-[11px] text-gray-400 font-medium">Баланс (Демо-счет Bybit)</div>
+        <div id="balanceVal" class="text-2xl font-extrabold text-white mt-0.5 tracking-tight">$10,000.00</div>
       </div>
       <div class="text-right">
-        <div class="text-[11px] text-gray-400 font-medium">Общая прибыль</div>
-        <div id="totalProfitVal" class="text-lg font-bold text-profit mt-0.5">+$24.80 (+2.5%)</div>
+        <div class="text-[11px] text-gray-400 font-medium">Нереализованный PnL</div>
+        <div id="totalProfitVal" class="text-lg font-bold text-gray-400 mt-0.5">$0.00 (0.0%)</div>
       </div>
     </div>
 
-    <!-- MAIN ON/OFF AUTOPILOT TOGGLE -->
-    <div class="p-3.5 rounded-xl bg-brandDark/80 border border-cardBorder flex items-center justify-between">
+    <!-- MAIN AUTOPILOT SWITCH -->
+    <div class="p-3 rounded-xl bg-brandDark/80 border border-cardBorder flex items-center justify-between">
       <div class="space-y-0.5">
         <div class="text-xs font-bold text-white flex items-center space-x-1.5">
-          <span>Режим авто-торговли</span>
+          <span>Режим авто-сканирования</span>
         </div>
-        <p id="autopilotDesc" class="text-[11px] text-gray-400">Бот сам ищет сделки и фиксирует доход</p>
+        <p id="autopilotDesc" class="text-[10px] text-gray-400">Круглосуточный мониторинг 16 пар на Bybit</p>
       </div>
       <label class="switch">
         <input type="checkbox" id="autopilotToggle" checked onchange="toggleAutopilot(this.checked)">
@@ -110,204 +110,110 @@
     </div>
   </div>
 
-  <!-- CARD 2: WHAT IS THE BOT DOING RIGHT NOW (HUMAN EXPLANATION) -->
+  <!-- CARD 2: REAL BOT STATUS -->
   <div class="glass-card p-4 space-y-2.5">
     <div class="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center space-x-1.5">
       <span>💡</span>
-      <span>Что сейчас делает робот:</span>
+      <span>Статус алгоритма Bybit:</span>
     </div>
-    <div id="botStatusExplanation" class="p-3 rounded-xl bg-brandDark/80 border border-cardBorder text-xs text-gray-300 leading-relaxed space-y-1">
-      <div class="text-profit font-semibold flex items-center space-x-1">
-        <span>🟢</span>
-        <span>Ведет безопасную арбитражную сделку</span>
+    <div id="botStatusExplanation" class="p-3 rounded-xl bg-brandDark/80 border border-cardBorder text-xs text-gray-300 leading-relaxed space-y-1.5">
+      <div class="text-emerald-400 font-semibold flex items-center space-x-1">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>Сканирование 11 TradFi + 5 Bluechip инструментов</span>
       </div>
       <p class="text-[11px] text-gray-400">
-        Бот зафиксировал расхождение между <b>NEAR</b> и <b>RENDER</b>. Сделка полностью застрахована от падения рынка (одна нога растет, если рынок падает, вторая — если растет). Прибыль уже составляет <b>+$24.80</b>. Робот автоматически закроет её в плюс при возврате цен к норме.
+        Текущие спреды всех пар находятся в безопасной зоне. Алгоритм дисциплинированно ждет аномального расхождения (|Z| ≥ 2.0σ), чтобы открыть дельта-нейтральный арбитраж без рыночного риска.
       </p>
+      <div id="quickSimulateBtnContainer" class="pt-1">
+        <button onclick="openSimulationTrade('XAUUSDT/XAGUSDT')" class="w-full py-2 px-3 rounded-lg bg-brand/10 hover:bg-brand/20 border border-brand/30 text-brand text-xs font-bold flex items-center justify-center space-x-1.5 transition-all active:scale-[0.98]">
+          <span>⚡</span>
+          <span>Смоделировать арбитраж: Золото vs Серебро (XAU/XAG)</span>
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- CARD 3: ACTIVE TRADES (SUPER SIMPLE) -->
+  <!-- CARD 3: ACTIVE POSITIONS -->
   <div class="glass-card p-4 space-y-3">
     <div class="flex items-center justify-between">
-      <div class="text-xs font-bold text-gray-300 uppercase tracking-wider">Текущие позиции</div>
-      <span class="text-[10px] text-gray-400 font-mono">1 пара в работе</span>
+      <div class="text-xs font-bold text-gray-300 uppercase tracking-wider">Открытые позиции</div>
+      <span id="posCountBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-cardBorder text-gray-400 font-mono">0 сделок</span>
     </div>
 
-    <div id="activePositionContainer" class="p-3.5 rounded-xl bg-brandDark/90 border border-cardBorder flex items-center justify-between">
+    <div id="activePositionContainer">
+      <div class="p-4 rounded-xl bg-brandDark/50 border border-cardBorder text-center text-xs text-gray-500">
+        В рынке нет открытых позиций — спреды стабильны.
+      </div>
+    </div>
+  </div>
+
+  <!-- CARD 4: LIVE BYBIT QUANT SCREENER (16 PAIRS) -->
+  <div class="glass-card p-4 space-y-3">
+    <div class="flex items-center justify-between">
       <div>
-        <div class="flex items-center space-x-2">
-          <span class="text-sm font-bold text-white">NEAR / RENDER</span>
-          <span class="text-[10px] px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-400 font-bold border border-emerald-800">Захеджировано</span>
-        </div>
-        <div class="text-[11px] text-gray-400 mt-1">
-          Куплен NEAR • Продан RENDER
-        </div>
-        <div class="text-[10px] text-gray-500 mt-0.5">
-          В сделке: 2ч 30м • Без риска обвала рынка
-        </div>
+        <div class="text-xs font-bold text-white uppercase tracking-wider">Живой скринер Bybit V5</div>
+        <div class="text-[10px] text-gray-400" id="screenerSummaryText">Котировки обновляются каждые 3 сек</div>
       </div>
-      <div class="text-right">
-        <div class="text-base font-extrabold text-profit">+$24.80</div>
-        <div class="text-[10px] text-profit font-semibold">+2.48% к позиции</div>
-      </div>
+      <span class="text-[10px] px-2 py-0.5 rounded-full bg-brand/10 text-brand border border-brand/30 font-bold">16 пар</span>
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="flex space-x-1.5 overflow-x-auto pb-1 text-[11px]">
+      <button onclick="filterPairs('tradfi')" id="tab_tradfi" class="px-2.5 py-1 rounded-lg bg-brand text-brandDark font-bold whitespace-nowrap transition-all">TradFi (11)</button>
+      <button onclick="filterPairs('crypto')" id="tab_crypto" class="px-2.5 py-1 rounded-lg bg-brandDark border border-cardBorder text-gray-300 font-medium whitespace-nowrap transition-all">Крипто Bluechips (5)</button>
+      <button onclick="filterPairs('all')" id="tab_all" class="px-2.5 py-1 rounded-lg bg-brandDark border border-cardBorder text-gray-300 font-medium whitespace-nowrap transition-all">Все (16)</button>
+    </div>
+
+    <!-- Screener Table Container -->
+    <div id="pairsListContainer" class="space-y-2 max-h-72 overflow-y-auto pr-1">
+      <div class="text-center py-4 text-xs text-gray-500">Связь с сервером Bybit V5...</div>
     </div>
   </div>
 
-  <!-- CARD 4: WHAT MARKETS ARE PROTECTED & MONITORED (TRADFI FOCUSED) -->
-  <div class="glass-card p-4 space-y-3">
-    <div class="flex items-center justify-between">
-      <div class="text-xs font-bold text-gray-300 uppercase tracking-wider">Рынки под защитой (TradFi фокус)</div>
-      <span class="text-[10px] text-brand font-mono">11 TradFi + 5 Bluechip</span>
-    </div>
-    
-    <div class="grid grid-cols-2 gap-2 text-xs">
-      <div class="p-2.5 rounded-xl bg-brandDark/70 border border-cardBorder flex items-center space-x-2">
-        <span class="text-base">🥇</span>
-        <div>
-          <div class="font-bold text-white text-[11px]">Драгметаллы</div>
-          <div class="text-[9px] text-gray-400">Золото vs Серебро (XAU/XAG)</div>
-        </div>
-      </div>
-
-      <div class="p-2.5 rounded-xl bg-brandDark/70 border border-cardBorder flex items-center space-x-2">
-        <span class="text-base">🏛</span>
-        <div>
-          <div class="font-bold text-white text-[11px]">Фондовые индексы</div>
-          <div class="text-[9px] text-gray-400">S&P 500 vs NASDAQ (SPY/QQQ)</div>
-        </div>
-      </div>
-
-      <div class="p-2.5 rounded-xl bg-brandDark/70 border border-cardBorder flex items-center space-x-2">
-        <span class="text-base">💱</span>
-        <div>
-          <div class="font-bold text-white text-[11px]">Мировой Форекс</div>
-          <div class="text-[9px] text-gray-400">EUR/USD, GBP/USD, USD/JPY</div>
-        </div>
-      </div>
-
-      <div class="p-2.5 rounded-xl bg-brandDark/70 border border-cardBorder flex items-center space-x-2">
-        <span class="text-base">💻</span>
-        <div>
-          <div class="font-bold text-white text-[11px]">AI Чипы & Полупроводники</div>
-          <div class="text-[9px] text-gray-400">Nvidia vs AMD (NVDA/AMD)</div>
-        </div>
-      </div>
-
-      <div class="p-2.5 rounded-xl bg-brandDark/70 border border-cardBorder flex items-center space-x-2">
-        <span class="text-base">🏢</span>
-        <div>
-          <div class="font-bold text-white text-[11px]">Big Tech Корпорации</div>
-          <div class="text-[9px] text-gray-400">Apple, Microsoft, Google, Meta</div>
-        </div>
-      </div>
-
-      <div class="p-2.5 rounded-xl bg-brandDark/70 border border-cardBorder flex items-center space-x-2">
-        <span class="text-base">🛡</span>
-        <div>
-          <div class="font-bold text-white text-[11px]">Крипто Голубые фишки</div>
-          <div class="text-[9px] text-gray-400">BTC, ETH, SOL, ARB (Без щиткоинов)</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CARD 4.5: TRADFI-FIRST QUANT SCREENER -->
-  <div class="glass-card p-4 space-y-3">
-    <div class="flex items-center justify-between cursor-pointer" onclick="toggleScreenerView()">
-      <div class="flex items-center space-x-2">
-        <span class="text-base">🎯</span>
-        <div>
-          <div class="text-xs font-bold text-white uppercase tracking-wider">Институциональный Скринер</div>
-          <div class="text-[10px] text-gray-400" id="screenerSummaryText">11 TradFi + 5 Bluechip пар активны</div>
-        </div>
-      </div>
-      <div class="flex items-center space-x-1.5">
-        <span class="text-[10px] px-2 py-0.5 rounded-full bg-brand/10 text-brand border border-brand/30 font-bold">TradFi Фокус</span>
-        <span id="screenerToggleIcon" class="text-xs text-gray-400">▼</span>
-      </div>
-    </div>
-
-    <!-- Screener Filter Tabs -->
-    <div id="screenerSection" class="space-y-3 pt-2 border-t border-cardBorder">
-      <div class="flex space-x-1.5 overflow-x-auto pb-1 text-[11px]">
-        <button onclick="filterPairs('tradfi')" id="tab_tradfi" class="px-2.5 py-1 rounded-lg bg-brand text-brandDark font-bold whitespace-nowrap transition-all">TradFi Рынки (11)</button>
-        <button onclick="filterPairs('crypto')" id="tab_crypto" class="px-2.5 py-1 rounded-lg bg-brandDark border border-cardBorder text-gray-300 font-medium whitespace-nowrap transition-all">Крипто Bluechips (5)</button>
-        <button onclick="filterPairs('all')" id="tab_all" class="px-2.5 py-1 rounded-lg bg-brandDark border border-cardBorder text-gray-300 font-medium whitespace-nowrap transition-all">Все (16)</button>
-      </div>
-
-      <!-- Dynamic Pairs List Container -->
-      <div id="pairsListContainer" class="space-y-2 max-h-80 overflow-y-auto pr-1">
-        <div class="text-center py-4 text-xs text-gray-500">Загрузка TradFi пар...</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CARD 5: PROFIT GROWTH GRAPH (CLEAN & SIMPLE) -->
+  <!-- CARD 5: LIVE SPREAD DYNAMICS (CHART) -->
   <div class="glass-card p-4 space-y-2">
     <div class="flex items-center justify-between">
-      <div class="text-xs font-bold text-gray-300 uppercase tracking-wider">Рост Вашего Депозита</div>
-      <span class="text-xs font-bold text-profit">+15.2% за 180 дней</span>
+      <div>
+        <div class="text-xs font-bold text-gray-300 uppercase tracking-wider">График расхождения спреда</div>
+        <div class="text-[10px] text-brand" id="chartPairTitle">XAUUSDT / XAGUSDT (Золото vs Серебро)</div>
+      </div>
+      <span class="text-[10px] px-2 py-0.5 rounded bg-cardBorder text-gray-300 font-mono" id="chartZVal">Z = -0.75σ</span>
     </div>
-    <div class="h-32 w-full">
-      <canvas id="growthChart"></canvas>
+    
+    <div class="h-36 w-full">
+      <canvas id="spreadChart"></canvas>
     </div>
-    <div class="text-[10px] text-gray-500 text-center pt-1">
-      Все сделки открываются парами — вы защищены от падений биткоина и кризисов.
+
+    <div class="flex items-center justify-between text-[9px] text-gray-500 pt-1 border-t border-cardBorder">
+      <span class="text-red-400">🔴 +2.0σ Верхний порог</span>
+      <span class="text-cyan-400">🔵 0.0σ Возврат к среднему (Тейк-профит)</span>
+      <span class="text-emerald-400">🟢 -2.0σ Нижний порог</span>
     </div>
   </div>
 
-  <!-- CARD 6: RECENT PROFITABLE TRADES (PROOF OF WORK) -->
-  <div class="glass-card p-4 space-y-3">
+  <!-- CARD 6: LIVE BYBIT CONSOLE LOGS -->
+  <div class="glass-card p-4 space-y-2">
     <div class="flex items-center justify-between">
-      <div class="text-xs font-bold text-gray-300 uppercase tracking-wider">Завершенные сделки</div>
-      <span class="text-[10px] text-profit font-semibold">100% в плюс</span>
+      <div class="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center space-x-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>Консоль событий Bybit V5</span>
+      </div>
+      <span class="text-[9px] text-gray-500 font-mono">Live Stream</span>
     </div>
 
-    <div class="space-y-2">
-      <div class="p-2.5 rounded-xl bg-brandDark/80 border border-cardBorder flex items-center justify-between">
-        <div>
-          <div class="text-xs font-bold text-white">Золото vs Серебро (XAU/XAG)</div>
-          <div class="text-[10px] text-gray-400 mt-0.5">Схождение спреда • Удержание: 14ч</div>
-        </div>
-        <div class="text-right">
-          <div class="text-xs font-extrabold text-profit">+$210.50</div>
-          <div class="text-[9px] text-profit font-semibold">+2.10%</div>
-        </div>
-      </div>
-
-      <div class="p-2.5 rounded-xl bg-brandDark/80 border border-cardBorder flex items-center justify-between">
-        <div>
-          <div class="text-xs font-bold text-white">S&P 500 vs NASDAQ (SPY/QQQ)</div>
-          <div class="text-[10px] text-gray-400 mt-0.5">Схождение спреда • Удержание: 18ч</div>
-        </div>
-        <div class="text-right">
-          <div class="text-xs font-extrabold text-profit">+$145.00</div>
-          <div class="text-[9px] text-profit font-semibold">+1.45%</div>
-        </div>
-      </div>
-
-      <div class="p-2.5 rounded-xl bg-brandDark/80 border border-cardBorder flex items-center justify-between">
-        <div>
-          <div class="text-xs font-bold text-white">SOL vs AVAX</div>
-          <div class="text-[10px] text-gray-400 mt-0.5">Схождение спреда • Удержание: 4ч</div>
-        </div>
-        <div class="text-right">
-          <div class="text-xs font-extrabold text-profit">+$126.80</div>
-          <div class="text-[9px] text-profit font-semibold">+1.27%</div>
-        </div>
-      </div>
+    <div id="logsConsole" class="p-2.5 rounded-xl bg-black/70 border border-cardBorder font-mono text-[10px] text-gray-300 space-y-1 max-h-32 overflow-y-auto">
+      <div class="text-gray-500">Инициализация потока событий...</div>
     </div>
   </div>
 
-  <!-- CARD 7: ONE-CLICK BYBIT ACCOUNT BINDING (MODAL/EXPANDABLE) -->
+  <!-- CARD 7: ONE-CLICK BYBIT ACCOUNT BINDING -->
   <div class="glass-card p-4 space-y-3">
     <div class="flex items-center justify-between cursor-pointer" onclick="toggleApiInput()">
       <div class="flex items-center space-x-2">
         <span class="text-base">🔑</span>
         <div>
-          <div class="text-xs font-bold text-white">Подключение Bybit аккаунта</div>
-          <div class="text-[10px] text-gray-400" id="apiKeyStatus">Сейчас: Виртуальный режим (Тест)</div>
+          <div class="text-xs font-bold text-white">Подключение реального Bybit счета</div>
+          <div class="text-[10px] text-gray-400" id="apiKeyStatus">Сейчас: Виртуальный режим (Paper Trading)</div>
         </div>
       </div>
       <span id="apiToggleIcon" class="text-xs text-gray-400">▼</span>
@@ -315,26 +221,26 @@
 
     <div id="apiInputSection" class="hidden space-y-2 pt-2 border-t border-cardBorder">
       <p class="text-[10px] text-gray-400">
-        Когда захотите подключить реальный Bybit счет — просто вставьте сюда ключи от аккаунта в один клик. Никаких настроек и кодинга.
+        Когда вы решите перевести робота на реальные деньги, просто вставьте API ключи от основного аккаунта Bybit:
       </p>
-      <input type="text" id="simpleApiKey" placeholder="Bybit API Key" class="w-full bg-brandDark border border-cardBorder rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-profit">
-      <input type="password" id="simpleApiSecret" placeholder="Bybit API Secret" class="w-full bg-brandDark border border-cardBorder rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-profit">
-      <button onclick="saveSimpleKeys()" class="w-full py-2.5 rounded-xl bg-profit text-brandDark font-bold text-xs uppercase tracking-wider shadow-md active:scale-[0.98] transition-all">
-        Подключить и торговать вживую
+      <input type="text" id="simpleApiKey" placeholder="Bybit API Key" class="w-full bg-brandDark border border-cardBorder rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand">
+      <input type="password" id="simpleApiSecret" placeholder="Bybit API Secret" class="w-full bg-brandDark border border-cardBorder rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-brand">
+      <button onclick="saveSimpleKeys()" class="w-full py-2.5 rounded-xl bg-brand text-brandDark font-bold text-xs uppercase tracking-wider shadow-md active:scale-[0.98] transition-all">
+        Подключить боевой счет
       </button>
     </div>
   </div>
 
   <!-- EMERGENCY STOP BUTTON -->
-  <div class="pt-2">
-    <button onclick="emergencyStop()" class="w-full py-3.5 rounded-2xl bg-red-600/90 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-red-950/40 active:scale-[0.98] transition-all flex items-center justify-center space-x-2">
+  <div class="pt-1">
+    <button onclick="emergencyStop()" class="w-full py-3 rounded-xl bg-red-600/80 hover:bg-red-600 text-white font-bold text-xs uppercase tracking-wider shadow-md active:scale-[0.98] transition-all flex items-center justify-center space-x-1.5">
       <span>🛑</span>
-      <span>Экстренно закрыть всё и остановить</span>
+      <span>Экстренно закрыть все позиции</span>
     </button>
   </div>
 
   <script>
-    // Initialize Telegram WebApp
+    // Telegram WebApp Setup
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.expand();
@@ -344,40 +250,344 @@
     }
 
     function haptic() {
-      if (tg?.HapticFeedback) {
-        tg.HapticFeedback.impactOccurred('light');
-      }
+      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
     }
 
+    let allPairsData = [];
+    let currentFilter = 'tradfi';
+    let currentSelectedPair = 'XAUUSDT/XAGUSDT';
+    let spreadChartInstance = null;
     let isAutopilotOn = true;
 
+    // Initialize Chart
     function initChart() {
-      const ctx = document.getElementById('growthChart').getContext('2d');
-      new Chart(ctx, {
+      const ctx = document.getElementById('spreadChart').getContext('2d');
+      spreadChartInstance = new Chart(ctx, {
         type: 'line',
         data: {
-          labels: ['1 мес', '2 мес', '3 мес', '4 мес', '5 мес', '6 мес'],
-          datasets: [{
-            data: [10000, 10240, 10530, 10830, 11180, 11520],
-            borderColor: '#10B981',
-            backgroundColor: 'rgba(16, 185, 129, 0.08)',
-            fill: true,
-            borderWidth: 2.5,
-            tension: 0.35,
-            pointRadius: 2,
-            pointBackgroundColor: '#10B981'
-          }]
+          labels: Array.from({length: 40}, (_, i) => `-${40 - i}m`),
+          datasets: [
+            {
+              label: 'Z-Score Спреда',
+              data: Array(40).fill(0),
+              borderColor: '#00F0FF',
+              borderWidth: 2,
+              pointRadius: 1,
+              tension: 0.35
+            },
+            {
+              label: 'Верхний порог (+2.0σ)',
+              data: Array(40).fill(2.0),
+              borderColor: '#EF4444',
+              borderWidth: 1.2,
+              borderDash: [4, 4],
+              pointRadius: 0
+            },
+            {
+              label: 'Нижний порог (-2.0σ)',
+              data: Array(40).fill(-2.0),
+              borderColor: '#10B981',
+              borderWidth: 1.2,
+              borderDash: [4, 4],
+              pointRadius: 0
+            },
+            {
+              label: 'Базис (0.0σ)',
+              data: Array(40).fill(0.0),
+              borderColor: 'rgba(255, 255, 255, 0.2)',
+              borderWidth: 1,
+              pointRadius: 0
+            }
+          ]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
+          animation: false,
           plugins: { legend: { display: false } },
           scales: {
-            x: { grid: { display: false }, ticks: { color: '#6B7280', font: { size: 9 } } },
-            y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#6B7280', font: { size: 9 } } }
+            x: { display: false },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#6B7280', font: { size: 9 } },
+              min: -3.0,
+              max: 3.0
+            }
           }
         }
       });
+    }
+
+    async function updateChart(pairKey) {
+      currentSelectedPair = pairKey;
+      const pairInfo = allPairsData.find(p => p.pair === pairKey);
+      const cleanName = pairKey.replace(/USDT/g, '');
+      const sector = pairInfo ? pairInfo.sector : '';
+      document.getElementById('chartPairTitle').innerText = `${cleanName} (${sector})`;
+
+      try {
+        const res = await fetch(`/api/chart?pair=${encodeURIComponent(pairKey)}`);
+        const data = await res.json();
+        if (spreadChartInstance && data.z_score) {
+          spreadChartInstance.data.datasets[0].data = data.z_score;
+          spreadChartInstance.update();
+          const lastZ = data.current_z || data.z_score[data.z_score.length - 1];
+          document.getElementById('chartZVal').innerText = `Z = ${Number(lastZ).toFixed(2)}σ`;
+        }
+      } catch (e) {
+        console.error("Failed to update chart", e);
+      }
+    }
+
+    function filterPairs(type) {
+      haptic();
+      currentFilter = type;
+      ['tradfi', 'crypto', 'all'].forEach(t => {
+        const btn = document.getElementById(`tab_${t}`);
+        if (btn) {
+          if (t === type) {
+            btn.className = "px-2.5 py-1 rounded-lg bg-brand text-brandDark font-bold whitespace-nowrap transition-all";
+          } else {
+            btn.className = "px-2.5 py-1 rounded-lg bg-brandDark border border-cardBorder text-gray-300 font-medium whitespace-nowrap transition-all";
+          }
+        }
+      });
+      renderPairsList();
+    }
+
+    async function loadPairs() {
+      try {
+        const res = await fetch('/api/pairs');
+        const data = await res.json();
+        allPairsData = data.pairs || [];
+        renderPairsList();
+      } catch (e) {
+        console.error("Failed to load pairs", e);
+      }
+    }
+
+    function renderPairsList() {
+      const container = document.getElementById('pairsListContainer');
+      const filtered = allPairsData.filter(p => {
+        if (currentFilter === 'all') return true;
+        return p.type === currentFilter;
+      });
+
+      if (!filtered.length) {
+        container.innerHTML = '<div class="text-center py-4 text-xs text-gray-500">Нет пар в этой категории</div>';
+        return;
+      }
+
+      container.innerHTML = filtered.map(p => {
+        const cleanA = p.symbol_a.replace('USDT', '').replace('STOCK', '');
+        const cleanB = p.symbol_b.replace('USDT', '').replace('STOCK', '');
+        const paStr = p.price_a ? (p.price_a < 2 ? p.price_a.toFixed(4) : p.price_a.toLocaleString('en-US', {maximumFractionDigits: 2})) : '...';
+        const pbStr = p.price_b ? (p.price_b < 2 ? p.price_b.toFixed(4) : p.price_b.toLocaleString('en-US', {maximumFractionDigits: 2})) : '...';
+        const z = Number(p.current_z || 0).toFixed(2);
+        const isSelected = p.pair === currentSelectedPair;
+        
+        let zBadgeClass = "bg-emerald-950/80 text-emerald-400 border-emerald-800";
+        if (Math.abs(z) >= 1.5) zBadgeClass = "bg-amber-950/80 text-amber-400 border-amber-800";
+        if (Math.abs(z) >= 2.0) zBadgeClass = "bg-red-950/80 text-red-400 border-red-800 animate-pulse";
+
+        return `
+          <div onclick="selectPairForChart('${p.pair}')" class="p-2.5 rounded-xl bg-brandDark/80 border ${isSelected ? 'border-brand/60 bg-brand/5' : 'border-cardBorder'} flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all">
+            <div class="space-y-0.5">
+              <div class="flex items-center space-x-1.5">
+                <span class="text-xs font-bold text-white">${cleanA} / ${cleanB}</span>
+                <span class="text-[9px] px-1.5 py-0.2 rounded bg-cardBorder text-gray-400">${p.sector}</span>
+              </div>
+              <div class="flex items-center space-x-2 text-[10px] text-gray-400 font-mono">
+                <span>${cleanA}: <b class="text-gray-200">$${paStr}</b></span>
+                <span>•</span>
+                <span>${cleanB}: <b class="text-gray-200">$${pbStr}</b></span>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-[10px] px-2 py-0.5 rounded-md border font-mono font-bold ${zBadgeClass}">
+                Z: ${z}σ
+              </span>
+              <label class="switch scale-75 origin-right" onclick="event.stopPropagation()">
+                <input type="checkbox" ${p.enabled ? 'checked' : ''} onchange="toggleSinglePair('${p.pair}', this.checked)">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function selectPairForChart(pairKey) {
+      haptic();
+      updateChart(pairKey);
+      renderPairsList();
+    }
+
+    async function toggleSinglePair(pairKey, enabled) {
+      try {
+        await fetch('/api/pairs/toggle', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({pair: pairKey})
+        });
+        const target = allPairsData.find(p => p.pair === pairKey);
+        if (target) target.enabled = enabled;
+      } catch (e) {
+        console.error("Toggle pair failed", e);
+      }
+    }
+
+    async function updateStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        
+        // Update balance
+        document.getElementById('balanceVal').innerText = `$${Number(data.balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        
+        // Update unrealized pnl
+        const pnl = Number(data.unrealized_pnl || 0);
+        const pnlEl = document.getElementById('totalProfitVal');
+        if (pnl > 0) {
+          pnlEl.className = "text-lg font-bold text-profit mt-0.5";
+          pnlEl.innerText = `+$${pnl.toFixed(2)}`;
+        } else if (pnl < 0) {
+          pnlEl.className = "text-lg font-bold text-loss mt-0.5";
+          pnlEl.innerText = `-$${Math.abs(pnl).toFixed(2)}`;
+        } else {
+          pnlEl.className = "text-lg font-bold text-gray-400 mt-0.5";
+          pnlEl.innerText = "$0.00 (0.0%)";
+        }
+
+        // Render Active Positions
+        const posContainer = document.getElementById('activePositionContainer');
+        const positions = Object.values(data.active_positions || {});
+        document.getElementById('posCountBadge').innerText = `${positions.length} сделок`;
+
+        if (!positions.length) {
+          posContainer.innerHTML = `
+            <div class="p-4 rounded-xl bg-brandDark/50 border border-cardBorder text-center text-xs text-gray-500">
+              В рынке нет открытых позиций — спреды стабильны.
+            </div>
+          `;
+          document.getElementById('botStatusExplanation').innerHTML = `
+            <div class="text-emerald-400 font-semibold flex items-center space-x-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Сканирование 11 TradFi + 5 Bluechip инструментов</span>
+            </div>
+            <p class="text-[11px] text-gray-400">
+              Текущие спреды всех пар находятся в безопасной зоне. Алгоритм дисциплинированно ждет аномального расхождения (|Z| ≥ 2.0σ), чтобы открыть дельта-нейтральный арбитраж без рыночного риска.
+            </p>
+            <div id="quickSimulateBtnContainer" class="pt-1">
+              <button onclick="openSimulationTrade('XAUUSDT/XAGUSDT')" class="w-full py-2 px-3 rounded-lg bg-brand/10 hover:bg-brand/20 border border-brand/30 text-brand text-xs font-bold flex items-center justify-center space-x-1.5 transition-all active:scale-[0.98]">
+                <span>⚡</span>
+                <span>Смоделировать арбитраж: Золото vs Серебро (XAU/XAG)</span>
+              </button>
+            </div>
+          `;
+        } else {
+          posContainer.innerHTML = positions.map(pos => {
+            const cleanA = pos.symbol_a.replace('USDT', '');
+            const cleanB = pos.symbol_b.replace('USDT', '');
+            const pnlVal = Number(pos.unrealized_pnl || 0);
+            const pnlClass = pnlVal >= 0 ? 'text-profit' : 'text-loss';
+            const pnlSign = pnlVal >= 0 ? '+' : '';
+
+            return `
+              <div class="p-3.5 rounded-xl bg-brandDark/90 border border-cardBorder space-y-2">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <span class="text-sm font-bold text-white">${cleanA} / ${cleanB}</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded-md bg-emerald-950 text-emerald-400 font-bold border border-emerald-800">Хеджировано</span>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-base font-extrabold ${pnlClass}">${pnlSign}$${pnlVal.toFixed(2)}</div>
+                    <div class="text-[10px] ${pnlClass} font-semibold">${pnlSign}${pos.unrealized_pnl_pct}% к позиции</div>
+                  </div>
+                </div>
+
+                <div class="p-2 rounded-lg bg-black/40 border border-cardBorder text-[10px] text-gray-300 font-mono grid grid-cols-2 gap-2">
+                  <div>
+                    <div class="text-gray-500">${pos.side_a}: ${pos.qty_a} ${cleanA}</div>
+                    <div>Вход: $${pos.entry_price_a.toLocaleString()} → <b class="text-white">$${pos.current_price_a.toLocaleString()}</b></div>
+                  </div>
+                  <div>
+                    <div class="text-gray-500">${pos.side_b}: ${pos.qty_b} ${cleanB}</div>
+                    <div>Вход: $${pos.entry_price_b.toLocaleString()} → <b class="text-white">$${pos.current_price_b.toLocaleString()}</b></div>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                  <span class="text-[10px] text-gray-400">Вход при Z=${pos.entry_z}σ • Дельта-нейтрально</span>
+                  <button onclick="closeSingleTrade('${pos.pair}')" class="px-2.5 py-1 rounded bg-red-950/80 hover:bg-red-900 border border-red-800 text-red-300 text-[10px] font-bold">
+                    Закрыть сделку
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          document.getElementById('botStatusExplanation').innerHTML = `
+            <div class="text-profit font-semibold flex items-center space-x-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>Ведет дельта-нейтральный арбитраж: ${positions[0].pair.replace(/USDT/g, '')}</span>
+            </div>
+            <p class="text-[11px] text-gray-400">
+              Позиция захеджирована от обвала рынка. PnL пересчитывается в реальном времени от стаканов Bybit. При сближении спреда к Z=0.0σ робот автоматически зафиксирует прибыль.
+            </p>
+          `;
+        }
+
+      } catch (e) {
+        console.error("Status update error", e);
+      }
+    }
+
+    async function openSimulationTrade(pairKey) {
+      haptic();
+      try {
+        await fetch('/api/demo/open_trade', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({pair: pairKey, side: -1})
+        });
+        updateStatus();
+        updateLogs();
+      } catch (e) {
+        alert("Ошибка при открытии симуляции");
+      }
+    }
+
+    async function closeSingleTrade(pairKey) {
+      haptic();
+      try {
+        await fetch('/api/demo/close_trade', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({pair: pairKey})
+        });
+        updateStatus();
+        updateLogs();
+      } catch (e) {
+        alert("Ошибка при закрытии");
+      }
+    }
+
+    async function updateLogs() {
+      try {
+        const res = await fetch('/api/logs');
+        const data = await res.json();
+        const logs = data.logs || [];
+        const container = document.getElementById('logsConsole');
+        if (logs.length) {
+          container.innerHTML = logs.map(l => {
+            let color = 'text-gray-300';
+            if (l.type === 'trade') color = 'text-brand font-bold';
+            if (l.type === 'scan') color = 'text-gray-400';
+            return `<div class="${color}"><span class="text-gray-500">[${l.time}]</span> ${l.msg}</div>`;
+          }).join('');
+        }
+      } catch (e) {}
     }
 
     async function toggleAutopilot(checked) {
@@ -386,57 +596,32 @@
       const liveBadge = document.getElementById('liveBadge');
       const liveStatusText = document.getElementById('liveStatusText');
       const desc = document.getElementById('autopilotDesc');
-      const explanation = document.getElementById('botStatusExplanation');
 
       if (checked) {
         liveBadge.className = "flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-800 text-emerald-400 text-xs font-semibold";
-        liveStatusText.innerText = "Работает";
-        desc.innerText = "Бот сам ищет сделки и фиксирует доход";
-        explanation.innerHTML = `
-          <div class="text-profit font-semibold flex items-center space-x-1">
-            <span>🟢</span>
-            <span>Ведет безопасную арбитражную сделку</span>
-          </div>
-          <p class="text-[11px] text-gray-400">
-            Бот зафиксировал расхождение между <b>NEAR</b> и <b>RENDER</b>. Сделка полностью застрахована от падения рынка. Прибыль: <b>+$24.80</b>. Робот автоматически закроет её в плюс при возврате цен к норме.
-          </p>
-        `;
+        liveStatusText.innerText = "Онлайн";
+        desc.innerText = "Круглосуточный мониторинг 16 пар на Bybit";
         fetch('/api/resume', {method: 'POST'});
       } else {
         liveBadge.className = "flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-yellow-950/80 border border-yellow-800 text-yellow-400 text-xs font-semibold";
         liveStatusText.innerText = "На паузе";
-        desc.innerText = "Авто-торговля временно приостановлена";
-        explanation.innerHTML = `
-          <div class="text-yellow-400 font-semibold flex items-center space-x-1">
-            <span>⏸</span>
-            <span>Автопилот на паузе</span>
-          </div>
-          <p class="text-[11px] text-gray-400">
-            Бот не открывает новых сделок. Включите тумблер выше, чтобы продолжить зарабатывать на расхождениях цен.
-          </p>
-        `;
+        desc.innerText = "Сканирование временно приостановлено";
       }
     }
 
     async function emergencyStop() {
       haptic();
-      if (confirm("Вы уверены? Бот моментально закроет все сделки и полностью остановится.")) {
+      if (confirm("Вы уверены? Бот закроет все открытые позиции.")) {
+        await fetch('/api/demo/close_trade', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({})
+        });
         await fetch('/api/kill', {method: 'POST'});
-        document.getElementById('autopilotToggle').checked = false;
-        toggleAutopilot(false);
-        document.getElementById('activePositionContainer').innerHTML = `
-          <div class="w-full text-center py-3 text-xs text-gray-400">Все сделки закрыты. Бот остановлен.</div>
-        `;
-        alert("🛑 Робот остановлен. Все позиции закрыты.");
+        updateStatus();
+        updateLogs();
+        alert("🛑 Все позиции закрыты.");
       }
-    }
-
-    async function updateStatus() {
-      try {
-        const res = await fetch('/api/status');
-        const data = await res.json();
-        document.getElementById('balanceVal').innerText = `$${Number(data.balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-      } catch (e) {}
     }
 
     function toggleApiInput() {
@@ -475,129 +660,24 @@
         document.getElementById('apiKeyStatus').innerText = "✅ Подключен реальный аккаунт Bybit";
         document.getElementById('apiKeyStatus').className = "text-[10px] text-profit font-bold";
         toggleApiInput();
-        alert("🎉 Реальный аккаунт Bybit успешно подключен! Робот перешел на боевой автопилот.");
+        alert("🎉 Реальный аккаунт Bybit успешно подключен!");
       } catch (e) {
         alert("Ошибка при сохранении ключей.");
       }
     }
 
-    let allPairsData = [];
-    let currentFilter = 'tradfi';
-    let screenerExpanded = true;
-
-    function toggleScreenerView() {
-      haptic();
-      const sec = document.getElementById('screenerSection');
-      const icon = document.getElementById('screenerToggleIcon');
-      screenerExpanded = !screenerExpanded;
-      if (screenerExpanded) {
-        sec.classList.remove('hidden');
-        icon.innerText = '▲';
-      } else {
-        sec.classList.add('hidden');
-        icon.innerText = '▼';
-      }
-    }
-
-    function filterPairs(type) {
-      haptic();
-      currentFilter = type;
-      ['tradfi', 'crypto', 'all'].forEach(t => {
-        const btn = document.getElementById(`tab_${t}`);
-        if (btn) {
-          if (t === type) {
-            btn.className = "px-2.5 py-1 rounded-lg bg-brand text-brandDark font-bold whitespace-nowrap transition-all";
-          } else {
-            btn.className = "px-2.5 py-1 rounded-lg bg-brandDark border border-cardBorder text-gray-300 font-medium whitespace-nowrap transition-all";
-          }
-        }
-      });
-      renderPairsList();
-    }
-
-    async function loadPairs() {
-      try {
-        const res = await fetch('/api/pairs');
-        const data = await res.json();
-        allPairsData = data.pairs || [];
-        const activeCount = allPairsData.filter(p => p.enabled).length;
-        const tradfiCount = allPairsData.filter(p => p.type === 'tradfi').length;
-        const cryptoCount = allPairsData.filter(p => p.type === 'crypto').length;
-        document.getElementById('screenerSummaryText').innerText = `${tradfiCount} TradFi + ${cryptoCount} Bluechip пар (${activeCount} активны)`;
-        renderPairsList();
-      } catch (e) {
-        console.error("Failed to load pairs", e);
-      }
-    }
-
-    function renderPairsList() {
-      const container = document.getElementById('pairsListContainer');
-      const filtered = allPairsData.filter(p => {
-        if (currentFilter === 'all') return true;
-        return p.type === currentFilter;
-      });
-
-      if (!filtered.length) {
-        container.innerHTML = '<div class="text-center py-4 text-xs text-gray-500">Нет пар в этой категории</div>';
-        return;
-      }
-
-      container.innerHTML = filtered.map(p => {
-        const isCoint = p.is_cointegrated;
-        const z = Number(p.current_z || 0).toFixed(2);
-        const zColor = Math.abs(z) >= 1.5 ? 'text-amber-400 font-bold' : 'text-emerald-400';
-        const cleanName = p.pair.replace(/USDT/g, '').replace('STOCK', '');
-
-        return `
-          <div class="p-2.5 rounded-xl bg-brandDark/80 border border-cardBorder flex items-center justify-between">
-            <div class="space-y-0.5">
-              <div class="flex items-center space-x-1.5">
-                <span class="text-xs font-bold text-white">${cleanName}</span>
-                <span class="text-[9px] px-1.5 py-0.2 rounded bg-cardBorder text-gray-400">${p.sector}</span>
-                ${isCoint ? '<span class="text-[9px] text-profit font-semibold">✓ Коинтегр.</span>' : ''}
-              </div>
-              <div class="flex items-center space-x-2 text-[10px] text-gray-400">
-                <span>Корр: <b class="text-white">${p.correlation}</b></span>
-                <span>•</span>
-                <span>Спред: <span class="${zColor}">${z}σ</span></span>
-                <span>•</span>
-                <span>Винрейт: <b class="text-profit">${p.win_rate}%</b></span>
-              </div>
-            </div>
-            <div>
-              <label class="switch scale-75 origin-right">
-                <input type="checkbox" ${p.enabled ? 'checked' : ''} onchange="toggleSinglePair('${p.pair}', this.checked)">
-                <span class="slider"></span>
-              </label>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    async function toggleSinglePair(pairKey, enabled) {
-      haptic();
-      try {
-        await fetch('/api/pairs/toggle', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({pair: pairKey})
-        });
-        const target = allPairsData.find(p => p.pair === pairKey);
-        if (target) target.enabled = enabled;
-        const activeCount = allPairsData.filter(p => p.enabled).length;
-        document.getElementById('screenerSummaryText').innerText = `${activeCount} из ${allPairsData.length} пар включены в автопилот`;
-      } catch (e) {
-        console.error("Toggle pair failed", e);
-      }
-    }
-
     window.onload = () => {
       initChart();
-      updateStatus();
       loadPairs();
-      setInterval(updateStatus, 5000);
-      setInterval(loadPairs, 15000);
+      updateStatus();
+      updateLogs();
+      updateChart(currentSelectedPair);
+
+      // Real-time ticking loops
+      setInterval(updateStatus, 2500);
+      setInterval(loadPairs, 3000);
+      setInterval(updateLogs, 3000);
+      setInterval(() => updateChart(currentSelectedPair), 4000);
     };
   </script>
 </body>
