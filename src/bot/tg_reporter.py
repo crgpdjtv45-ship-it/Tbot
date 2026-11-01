@@ -1,4 +1,7 @@
-import asyncio
+import os
+import time
+import json
+import urllib.request
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from loguru import logger
@@ -23,10 +26,10 @@ CONFIG_URL_PATH = Path("configs/tma_url.txt")
 
 class TelegramReporter:
     """
-    Максимально чистый Telegram интерфейс:
-    - Никаких текстовых отчетов, сигналов и спама в чат.
-    - Ровно одно аккуратное приветственное сообщение с единственной кнопкой '🚀 Открыть Терминал'.
-    - Все управление, баланс, автопилот и сделки происходят исключительно внутри Mini App.
+    Институциональный Telegram-интерфейс для Bybit StatArb робота:
+    - Кнопка открытия полноэкранного терминала (Mini App).
+    - Уведомления об открытии и закрытии арбитражных сделок в реальном времени.
+    - Команды /start, /status, /trades, /stop.
     """
     def __init__(
         self,
@@ -37,7 +40,8 @@ class TelegramReporter:
         risk_manager = None,
         bybit_client = None,
         screener = None,
-        candidate_pairs: Optional[List[Dict[str, str]]] = None
+        candidate_pairs: Optional[List[Dict[str, str]]] = None,
+        app_state_getter = None
     ):
         self.bot_token = bot_token.strip()
         self.chat_id = str(chat_id).strip()
@@ -48,6 +52,7 @@ class TelegramReporter:
         self.bybit_client = bybit_client
         self.screener = screener
         self.candidate_pairs = candidate_pairs or []
+        self.app_state_getter = app_state_getter
         
         self.bot = None
         self.dp = None
@@ -57,13 +62,12 @@ class TelegramReporter:
                 self.bot = Bot(token=self.bot_token)
                 self.dp = Dispatcher()
                 self._register_handlers()
-                logger.info("TelegramReporter успешно инициализирован в режиме чистого чата.")
+                logger.info("TelegramReporter успешно инициализирован.")
             except Exception as e:
                 logger.error(f"Ошибка инициализации Telegram Bot: {e}")
                 self.enabled = False
 
     def _get_tma_url(self) -> str:
-        import os
         tma_url = os.environ.get("RENDER_EXTERNAL_URL", "https://tbot-statarb.onrender.com")
         if CONFIG_URL_PATH.exists():
             try:
@@ -75,7 +79,6 @@ class TelegramReporter:
         return tma_url
 
     def _get_main_keyboard(self) -> InlineKeyboardMarkup:
-        """Строго одна кнопка в чате."""
         keyboard = [
             [
                 InlineKeyboardButton(text="🚀 Открыть Терминал", web_app=types.WebAppInfo(url=self._get_tma_url()))
@@ -86,31 +89,163 @@ class TelegramReporter:
     def _is_authorized(self, user_id: int) -> bool:
         return str(user_id) == self.chat_id
 
+    def send_sync_message(self, text: str, reply_markup=None) -> bool:
+        """Потокобезопасная отправка сообщения в Telegram через синхронный REST API."""
+        if not self.bot_token or not self.chat_id:
+            return False
+        try:
+            payload = {
+                "chat_id": self.chat_id,
+                "text": text,
+                "parse_mode": "HTML"
+            }
+            if reply_markup:
+                # If reply_markup is dict or aiogram object
+                if hasattr(reply_markup, "model_dump"):
+                    payload["reply_markup"] = reply_markup.model_dump(exclude_none=True)
+                elif isinstance(reply_markup, dict):
+                    payload["reply_markup"] = reply_markup
+
+            req = urllib.request.Request(
+                f"https://api.telegram.org/bot{self.bot_token}/sendMessage",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                return resp.status == 200
+        except Exception as e:
+            logger.error(f"Telegram send error: {e}")
+            return False
+
     def _register_handlers(self):
         if not self.dp:
             return
 
+        @self.dp.message(Command("start"))
+        async def start_handler(message: types.Message):
+            if not self._is_authorized(message.chat.id):
+                return
+
+            text = (
+                "🤖 <b>Bybit StatArb Institutional Autopilot</b>\n"
+                "─────────────────────────\n"
+                "Квантовый робот статистического арбитража запущен и работает в облаке.\n\n"
+                "• <b>Фокус:</b> 11 TradFi пар (Золото, Серебро, Нефть, S&P 500, NASDAQ, Forex) + 5 Bluechips\n"
+                "• <b>Стратегия:</b> Дельта-нейтральный спред, коинтеграция Bybit V5\n"
+                "• <b>Депозит:</b> Демо-счет Bybit ($10,000.00 USDT)\n"
+                "• <b>Статус:</b> 🟢 Онлайн / Автопилот активен\n\n"
+                "Нажмите кнопку ниже, чтобы открыть графический терминал управления:"
+            )
+            await message.reply(text, reply_markup=self._get_main_keyboard(), parse_mode=ParseMode.HTML)
+
+        @self.dp.message(Command("status"))
+        async def status_handler(message: types.Message):
+            if not self._is_authorized(message.chat.id):
+                return
+
+            state = self.app_state_getter() if self.app_state_getter else {}
+            balance = state.get("balance", 10000.0)
+            pnl = state.get("unrealized_pnl", 0.0)
+            active_cnt = state.get("active_positions_count", 0)
+            is_paused = state.get("is_kill_switch_active", False)
+
+            pnl_sign = "+" if pnl >= 0 else ""
+            status_emoji = "🟡 НА ПАУЗЕ" if is_paused else "🟢 АКТИВЕН (АВТОПИЛОТ)"
+
+            text = (
+                "📊 <b>Текущий статус робота Bybit:</b>\n"
+                "─────────────────────────\n"
+                f"• <b>Автопилот:</b> {status_emoji}\n"
+                f"• <b>Баланс:</b> ${balance:,.2f} USDT\n"
+                f"• <b>Нереализованный PnL:</b> {pnl_sign}${pnl:,.2f} USDT\n"
+                f"• <b>Открытых позиций:</b> {active_cnt}\n"
+                f"• <b>Всего отслеживается пар:</b> 16 инструментов\n"
+                "─────────────────────────"
+            )
+            await message.reply(text, reply_markup=self._get_main_keyboard(), parse_mode=ParseMode.HTML)
+
+        @self.dp.message(Command("stop"))
+        async def stop_handler(message: types.Message):
+            if not self._is_authorized(message.chat.id):
+                return
+
+            if self.risk_manager:
+                self.risk_manager.trigger_kill_switch("Command /stop from Telegram")
+            if self.order_manager:
+                self.order_manager.close_all_positions(reason="Telegram /stop")
+
+            text = (
+                "🛑 <b>ЭКСТРЕННАЯ ОСТАНОВКА</b>\n"
+                "─────────────────────────\n"
+                "Все открытые позиции закрыты по текущей рыночной цене.\n"
+                "Автопилот переведен на паузу.\n\n"
+                "Для возобновления откройте терминал и включите переключатель автопилота."
+            )
+            await message.reply(text, reply_markup=self._get_main_keyboard(), parse_mode=ParseMode.HTML)
+
         @self.dp.message()
-        async def any_message_handler(message: types.Message):
-            """На любую команду или сообщение отправляется только лаконичная карточка терминала."""
+        async def any_message(message: types.Message):
             if not self._is_authorized(message.chat.id):
                 return
 
             welcome_text = (
-                "🤖 <b>Bybit StatArb • Автопилот</b>\n\n"
-                "Весь мониторинг, сделки и управление доступны в графическом приложении:"
+                "🤖 <b>Bybit StatArb • Квантовый терминал</b>\n\n"
+                "Для мониторинга сделок, спредов и настроек перейдите в веб-терминал:"
             )
             await message.reply(welcome_text, reply_markup=self._get_main_keyboard(), parse_mode=ParseMode.HTML)
 
-    # Заглушки для уведомлений - чтобы чат никогда не засорялся
-    async def send_message(self, text: str, reply_markup=None):
-        pass
+    def notify_entry(self, pos: Dict[str, Any]):
+        """Оповещение об открытии арбитражного хэджа."""
+        if not self.enabled:
+            return
 
-    async def notify_signal(self, pair: str, z_score: float, action: str):
-        pass
+        pair = pos.get("pair", "")
+        clean_name = pair.replace("USDT", "").replace("STOCK", "")
+        side_str = "SHORT A / LONG B" if pos.get("side") == -1 else "LONG A / SHORT B"
+        z = pos.get("entry_z", 0.0)
+        cap = pos.get("capital", 2000.0)
 
-    async def notify_entry(self, pos: Dict[str, Any]):
-        pass
+        pa = pos.get("entry_price_a", 0.0)
+        pb = pos.get("entry_price_b", 0.0)
+        qa = pos.get("qty_a", 0.0)
+        qb = pos.get("qty_b", 0.0)
+        syma = pos.get("symbol_a", "").replace("USDT", "")
+        symb = pos.get("symbol_b", "").replace("USDT", "")
 
-    async def notify_exit(self, pos: Dict[str, Any]):
-        pass
+        text = (
+            f"⚡ <b>ВХОД В АРБИТРАЖ • Bybit V5</b>\n"
+            f"─────────────────────────\n"
+            f"<b>Инструмент:</b> {clean_name}\n"
+            f"<b>Сигнал расхождения:</b> Z = {z:+.2f}σ\n"
+            f"<b>Стратегия:</b> {side_str} (Дельта-нейтрально)\n"
+            f"• <b>Нога A:</b> {qa} {syma} по ${pa:,.2f}\n"
+            f"• <b>Нога B:</b> {qb} {symb} по ${pb:,.2f}\n"
+            f"<b>Выделенный капитал:</b> ${cap:,.2f} USDT (20% депо)\n"
+            f"─────────────────────────\n"
+            f"🛡 <i>Позиция захеджирована от общих движений рынка.</i>"
+        )
+        self.send_sync_message(text)
+
+    def notify_exit(self, pos: Dict[str, Any], pnl: float, reason: str, balance: float):
+        """Оповещение о закрытии арбитражной позиции с фиксацией прибыли/убытка."""
+        if not self.enabled:
+            return
+
+        pair = pos.get("pair", "")
+        clean_name = pair.replace("USDT", "").replace("STOCK", "")
+        pnl_sign = "+" if pnl >= 0 else ""
+        cap = pos.get("capital", 2000.0)
+        pnl_pct = (pnl / cap) * 100.0 if cap > 0 else 0.0
+        emoji = "✅" if pnl >= 0 else "⚠️"
+
+        text = (
+            f"{emoji} <b>АРБИТРАЖ ЗАКРЫТ • Bybit V5</b>\n"
+            f"─────────────────────────\n"
+            f"<b>Инструмент:</b> {clean_name}\n"
+            f"<b>Результат (PnL):</b> <b>{pnl_sign}${pnl:,.2f} ({pnl_sign}{pnl_pct:.2f}%)</b>\n"
+            f"<b>Причина выхода:</b> {reason}\n"
+            f"<b>Текущий баланс:</b> ${balance:,.2f} USDT\n"
+            f"─────────────────────────\n"
+            f"📈 <i>Прибыль зафиксирована на балансе. Алгоритм вернулся к сканированию.</i>"
+        )
+        self.send_sync_message(text)

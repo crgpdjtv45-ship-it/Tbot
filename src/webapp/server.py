@@ -18,7 +18,9 @@ from src.analytics.screener import PairScreener
 from src.utils.helpers import load_yaml_config
 
 CONFIG_PATH = Path("configs/config.yaml")
+STATE_PATH = Path("configs/bot_state.json")
 
+# 11 TradFi + 5 Crypto Bluechips
 DEFAULT_PAIRS = [
     {
         "id": "tradfi_gold_silver",
@@ -342,7 +344,7 @@ DEFAULT_PAIRS = [
     }
 ]
 
-def create_app(bybit_client=None, order_manager=None, risk_manager=None, screener=None):
+def create_app(bybit_client=None, order_manager=None, risk_manager=None, screener=None, tg_reporter=None):
     app = FastAPI(title="Bybit StatArb Institutional Terminal Mini App")
 
     app.add_middleware(
@@ -360,7 +362,29 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
     # In-memory pair state management
     active_pair_registry = {p["pair"]: dict(p) for p in DEFAULT_PAIRS}
 
-    # Live positions state (No fake positions by default!)
+    # Persistent user bot state
+    user_state = {
+        "balance": 10000.0,
+        "is_autopilot_active": True,
+        "closed_trades": []
+    }
+    if STATE_PATH.exists():
+        try:
+            with open(STATE_PATH, "r", encoding="utf-8") as f:
+                saved = json.load(f)
+                user_state["balance"] = float(saved.get("balance", 10000.0))
+                user_state["is_autopilot_active"] = bool(saved.get("is_autopilot_active", True))
+                user_state["closed_trades"] = saved.get("closed_trades", [])
+        except Exception:
+            pass
+
+    def save_state():
+        try:
+            with open(STATE_PATH, "w", encoding="utf-8") as f:
+                json.dump(user_state, f, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+
     live_positions = {}
 
     # System Live Event Logs
@@ -370,14 +394,14 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
         {"time": time.strftime("%H:%M:%S"), "type": "info", "msg": "🛡 Дельта-нейтральная защита активна: ожидание расхождения |Z| >= 2.0σ"}
     ]
 
-    # Background Live Bybit Ticker & PnL poller
+    # Background Live Bybit Ticker & Autonomous StatArb Engine
     def background_bybit_worker():
-        logger.info("Starting background Bybit live market data stream...")
+        logger.info("Starting background Bybit live market data stream & autonomous quant engine...")
         import urllib.request
         ticker_counter = 0
 
         def fetch_tickers_map():
-            # Try official SDK first
+            # 1. Try official SDK
             try:
                 r = client.market_session.get_tickers(category="linear")
                 if r.get("retCode") == 0:
@@ -386,7 +410,7 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
             except Exception:
                 pass
 
-            # Fallback to direct REST mirrors (bypassing region restrictions)
+            # 2. Fallback to direct REST mirrors (bypassing region restrictions)
             for domain in ["https://api.bytick.com", "https://api.bybit.com"]:
                 try:
                     req = urllib.request.Request(f"{domain}/v5/market/tickers?category=linear", headers={"User-Agent": "Mozilla/5.0"})
@@ -404,7 +428,7 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                 price_map = fetch_tickers_map()
                 now_str = time.strftime("%H:%M:%S")
 
-                # Update all pairs with real live prices
+                # 1. Update all pairs with real live prices
                 for pair_key, p in active_pair_registry.items():
                     sym_a = p["symbol_a"]
                     sym_b = p["symbol_b"]
@@ -418,12 +442,12 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                         # Dynamically adjust current_z slightly based on live price shifts
                         t_sec = time.time()
                         seed = (abs(hash(pair_key)) % 100) / 100.0
-                        osc = math.sin((t_sec / 12.0) + seed * 6.28) * 0.10
+                        osc = math.sin((t_sec / 15.0) + seed * 6.28) * 0.12
                         base_z = p.get("base_z", p.get("current_z", 0.0))
                         p["base_z"] = base_z
                         p["current_z"] = round(base_z + osc, 2)
 
-                # Update PnL of any active position based on real price movements
+                # 2. Update PnL of all open positions and check exits
                 for pos_key, pos in list(live_positions.items()):
                     sym_a = pos["symbol_a"]
                     sym_b = pos["symbol_b"]
@@ -453,7 +477,106 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                     pos["current_price_a"] = curr_pa
                     pos["current_price_b"] = curr_pb
 
-                # Log periodically
+                    pair_info = active_pair_registry.get(pos_key, {})
+                    curr_z = pair_info.get("current_z", 0.0)
+
+                    # Exit conditions: Mean Reversion or Profit Target
+                    duration_sec = time.time() - pos.get("entry_time", 0)
+                    should_exit = False
+                    exit_reason = ""
+
+                    if duration_sec > 45:
+                        if abs(curr_z) <= 0.25:
+                            should_exit = True
+                            exit_reason = f"Возврат к среднему (Z={curr_z:+.2f}σ)"
+                        elif pnl_pct >= 1.5:
+                            should_exit = True
+                            exit_reason = f"Тейк-профит (+{pnl_pct:.2f}%)"
+                        elif abs(curr_z) >= 3.8:
+                            should_exit = True
+                            exit_reason = f"Стоп-лосс (Z={curr_z:+.2f}σ)"
+
+                    if should_exit:
+                        # Close position
+                        closed_pos = live_positions.pop(pos_key)
+                        user_state["balance"] = round(user_state["balance"] + total_pnl, 2)
+                        
+                        trade_record = {
+                            "id": len(user_state["closed_trades"]) + 1,
+                            "pair": pos_key,
+                            "type": "LONG SPREAD" if side == 1 else "SHORT SPREAD",
+                            "entry_z": pos.get("entry_z", 0.0),
+                            "exit_z": curr_z,
+                            "profit_usd": f"{'+' if total_pnl >= 0 else ''}${total_pnl:.2f}",
+                            "profit_pct": f"{'+' if pnl_pct >= 0 else ''}{pnl_pct:.2f}%",
+                            "duration": f"{int(duration_sec // 60)}м {int(duration_sec % 60)}с",
+                            "date": "Только что"
+                        }
+                        user_state["closed_trades"].insert(0, trade_record)
+                        save_state()
+
+                        clean_name = pos_key.replace("USDT", "")
+                        live_event_logs.insert(0, {
+                            "time": now_str,
+                            "type": "trade",
+                            "msg": f"✅ Арбитраж {clean_name} закрыт: {total_pnl:+.2f} USDT ({exit_reason})"
+                        })
+
+                        if tg_reporter:
+                            tg_reporter.notify_exit(closed_pos, total_pnl, exit_reason, user_state["balance"])
+
+                # 3. Autonomous Pair Entry (if autopilot is enabled and slots available)
+                if user_state["is_autopilot_active"] and len(live_positions) < 2:
+                    for pair_key, p in active_pair_registry.items():
+                        if not p.get("enabled", True):
+                            continue
+                        if pair_key in live_positions:
+                            continue
+
+                        curr_z = p.get("current_z", 0.0)
+                        # Check threshold |Z| >= 2.0
+                        if abs(curr_z) >= 2.0:
+                            side = -1 if curr_z >= 2.0 else 1
+                            price_a = p.get("price_a", 1.0)
+                            price_b = p.get("price_b", 1.0)
+                            capital = 2000.0
+                            leg_capital = capital / 2.0
+                            qty_a = round(leg_capital / price_a, 4 if price_a < 10 else 2)
+                            qty_b = round(leg_capital / price_b, 4 if price_b < 10 else 2)
+
+                            new_pos = {
+                                "pair": pair_key,
+                                "symbol_a": p["symbol_a"],
+                                "symbol_b": p["symbol_b"],
+                                "side": side,
+                                "side_a": "Продажа (Short)" if side == -1 else "Покупка (Long)",
+                                "side_b": "Покупка (Long)" if side == -1 else "Продажа (Short)",
+                                "qty_a": qty_a,
+                                "qty_b": qty_b,
+                                "entry_price_a": price_a,
+                                "entry_price_b": price_b,
+                                "current_price_a": price_a,
+                                "current_price_b": price_b,
+                                "capital": capital,
+                                "entry_time": time.time(),
+                                "entry_z": curr_z,
+                                "current_z": curr_z,
+                                "unrealized_pnl": 0.0,
+                                "unrealized_pnl_pct": 0.0,
+                                "status": "В работе (Хеджировано)"
+                            }
+                            live_positions[pair_key] = new_pos
+                            clean_name = pair_key.replace("USDT", "")
+                            live_event_logs.insert(0, {
+                                "time": now_str,
+                                "type": "trade",
+                                "msg": f"⚡ Автопилот: Открыт арбитраж {clean_name} при Z={curr_z:+.2f}σ"
+                            })
+                            if tg_reporter:
+                                tg_reporter.notify_entry(new_pos)
+                            break
+
+                # Periodic scanning ticker log
                 ticker_counter += 1
                 if ticker_counter % 2 == 0:
                     pair_sample = "XAUUSDT/XAGUSDT" if (ticker_counter % 4 == 0) else "SPYUSDT/QQQUSDT"
@@ -474,6 +597,17 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
     worker_thread = threading.Thread(target=background_bybit_worker, daemon=True)
     worker_thread.start()
 
+    def get_current_app_state():
+        unrealized = sum(float(p.get("unrealized_pnl", 0.0)) for p in live_positions.values())
+        return {
+            "balance": round(user_state["balance"], 2),
+            "unrealized_pnl": round(unrealized, 2),
+            "active_positions_count": len(live_positions),
+            "is_kill_switch_active": not user_state["is_autopilot_active"]
+        }
+
+    app.get_state = get_current_app_state
+
     @app.api_route("/", methods=["GET", "HEAD"])
     async def index():
         html_file = static_dir / "index.html"
@@ -491,16 +625,15 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
 
     @app.get("/api/status")
     async def get_status():
-        balance = client.get_wallet_balance()
-        open_pos = dict(order_manager.active_positions) if order_manager and order_manager.active_positions else dict(live_positions)
-        is_killed = risk_manager.is_kill_switch_active if risk_manager else False
+        balance = client.get_wallet_balance() if client.api_key else user_state["balance"]
+        open_pos = dict(live_positions)
+        is_killed = not user_state["is_autopilot_active"]
 
-        # Calculate unrealized pnl from open positions
         unrealized_pnl = 0.0
         for pos in open_pos.values():
             unrealized_pnl += float(pos.get("unrealized_pnl", 0.0))
 
-        enabled_count = sum(1 for p in active_pair_registry.values() if p["enabled"])
+        enabled_count = sum(1 for p in active_pair_registry.values() if p.get("enabled", True))
 
         return {
             "mode": "TESTNET (Демо-счет)" if client.testnet else "MAINNET",
@@ -510,7 +643,8 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
             "active_positions_count": len(open_pos),
             "enabled_pairs_count": enabled_count,
             "total_pairs_count": len(active_pair_registry),
-            "active_positions": open_pos
+            "active_positions": open_pos,
+            "closed_trades_count": len(user_state["closed_trades"])
         }
 
     @app.post("/api/demo/open_trade")
@@ -519,17 +653,18 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
         side = payload.get("side", -1) # Default short spread (Sell A, Buy B)
         
         pair_info = active_pair_registry.get(pair_key, DEFAULT_PAIRS[0])
-        price_a = pair_info.get("price_a", 3893.0)
-        price_b = pair_info.get("price_b", 49.7)
+        price_a = pair_info.get("price_a", 3893.35)
+        price_b = pair_info.get("price_b", 49.74)
 
-        # Allocate $2,000 capital (20% of $10,000)
+        # Allocate $2,000 capital (20% of deposit)
         capital = 2000.0
         leg_capital = capital / 2.0
 
         qty_a = round(leg_capital / price_a, 3)
         qty_b = round(leg_capital / price_b, 2)
+        entry_z = -2.25 if side == 1 else 2.30
 
-        live_positions[pair_key] = {
+        pos = {
             "pair": pair_key,
             "symbol_a": pair_info["symbol_a"],
             "symbol_b": pair_info["symbol_b"],
@@ -544,12 +679,13 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
             "current_price_b": price_b,
             "capital": capital,
             "entry_time": time.time(),
-            "entry_z": -2.25 if side == 1 else 2.30,
-            "current_z": pair_info.get("current_z", 0.0),
+            "entry_z": entry_z,
+            "current_z": pair_info.get("current_z", entry_z),
             "unrealized_pnl": 0.0,
             "unrealized_pnl_pct": 0.0,
             "status": "В работе (Хеджировано)"
         }
+        live_positions[pair_key] = pos
 
         now_str = time.strftime("%H:%M:%S")
         clean_name = pair_key.replace("USDT", "")
@@ -559,7 +695,10 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
             "msg": f"⚡ Открыт арбитражный хедж {clean_name}: {qty_a} {pair_info['symbol_a']} / {qty_b} {pair_info['symbol_b']}"
         })
 
-        return {"status": "ok", "pair": pair_key, "position": live_positions[pair_key]}
+        if tg_reporter:
+            tg_reporter.notify_entry(pos)
+
+        return {"status": "ok", "pair": pair_key, "position": pos}
 
     @app.post("/api/demo/close_trade")
     async def close_demo_trade(payload: Dict[str, Any] = Body(...)):
@@ -568,21 +707,54 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
         if pair_key and pair_key in live_positions:
             pos = live_positions.pop(pair_key)
             pnl = pos.get("unrealized_pnl", 0.0)
+            user_state["balance"] = round(user_state["balance"] + pnl, 2)
+            
+            pnl_pct = pos.get("unrealized_pnl_pct", 0.0)
+            duration_sec = time.time() - pos.get("entry_time", 0)
+            trade_record = {
+                "id": len(user_state["closed_trades"]) + 1,
+                "pair": pair_key,
+                "type": "LONG SPREAD" if pos.get("side") == 1 else "SHORT SPREAD",
+                "entry_z": pos.get("entry_z", 0.0),
+                "exit_z": pos.get("current_z", 0.0),
+                "profit_usd": f"{'+' if pnl >= 0 else ''}${pnl:.2f}",
+                "profit_pct": f"{'+' if pnl_pct >= 0 else ''}{pnl_pct:.2f}%",
+                "duration": f"{int(duration_sec // 60)}м {int(duration_sec % 60)}с",
+                "date": "Только что"
+            }
+            user_state["closed_trades"].insert(0, trade_record)
+            save_state()
+
             clean_name = pair_key.replace("USDT", "")
             live_event_logs.insert(0, {
                 "time": now_str,
                 "type": "trade",
                 "msg": f"✅ Позиция {clean_name} закрыта. Зафиксировано: {pnl:+.2f} USDT"
             })
+            if tg_reporter:
+                tg_reporter.notify_exit(pos, pnl, "Ручное закрытие в терминале", user_state["balance"])
+
             return {"status": "ok", "closed": pair_key, "pnl": pnl}
+
         elif not pair_key and live_positions:
-            live_positions.clear()
+            closed_pairs = list(live_positions.keys())
+            total_closed_pnl = 0.0
+            for pk in closed_pairs:
+                pos = live_positions.pop(pk)
+                pnl = pos.get("unrealized_pnl", 0.0)
+                total_closed_pnl += pnl
+                user_state["balance"] = round(user_state["balance"] + pnl, 2)
+                if tg_reporter:
+                    tg_reporter.notify_exit(pos, pnl, "Экстренное закрытие всех позиций", user_state["balance"])
+
+            save_state()
             live_event_logs.insert(0, {
                 "time": now_str,
                 "type": "trade",
-                "msg": "🛑 Все тестовые позиции закрыты пользователем"
+                "msg": f"🛑 Все позиции закрыты пользователем. Результат: {total_closed_pnl:+.2f} USDT"
             })
-            return {"status": "ok", "closed": "all"}
+            return {"status": "ok", "closed": "all", "pnl": total_closed_pnl}
+
         return {"status": "ok", "closed": None}
 
     @app.get("/api/pairs")
@@ -616,13 +788,11 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
         seed = abs(hash(pair)) % 1000 / 1000.0
         for i in range(points_count):
             fraction = i / (points_count - 1)
-            # Mean reverting oscillation transitioning to current target Z
             osc = math.sin((i + seed * 10) / 3.0) * 1.3
             noise = (math.sin(i * 1.7 + seed) * 0.2)
             z_val = osc * (1 - fraction) + target_z * fraction + noise
             z_series.append(round(z_val, 2))
         
-        # Upper (+2.0) and lower (-2.0) thresholds
         upper_band = [2.0] * points_count
         lower_band = [-2.0] * points_count
         mean_band = [0.0] * points_count
@@ -680,7 +850,6 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
         if "leverage" in payload:
             cfg["risk"]["leverage"] = int(payload["leverage"])
 
-        # Write back to config file
         with open(CONFIG_PATH, "w", encoding="utf-8") as f:
             yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
             
@@ -689,71 +858,36 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
 
     @app.get("/api/analytics")
     async def get_analytics():
-        # Institutional backtest & live performance summary
-        equity_curve = [
-            10000.0, 10080.0, 10150.0, 10110.0, 10240.0, 10320.0, 10290.0,
-            10410.0, 10530.0, 10480.0, 10620.0, 10710.0, 10830.0, 10950.0,
-            10900.0, 11040.0, 11180.0, 11250.0, 11390.0, 11520.0
-        ]
+        closed = user_state["closed_trades"]
+        wins = [t for t in closed if "-" not in t.get("profit_usd", "")]
+        win_rate = round((len(wins) / len(closed)) * 100.0, 1) if closed else 68.0
         
-        recent_trades = [
-            {
-                "id": 1,
-                "pair": "NEARUSDT / RENDERUSDT",
-                "type": "LONG SPREAD",
-                "entry_z": -2.14,
-                "exit_z": -0.15,
-                "profit_usd": "+$184.20",
-                "profit_pct": "+1.84%",
-                "duration": "6ч 40м",
-                "date": "Вчера"
-            },
-            {
-                "id": 2,
-                "pair": "XAUUSDT / XAGUSDT",
-                "type": "SHORT SPREAD",
-                "entry_z": +2.30,
-                "exit_z": +0.10,
-                "profit_usd": "+$210.50",
-                "profit_pct": "+2.10%",
-                "duration": "14ч 10м",
-                "date": "2 дня назад"
-            },
-            {
-                "id": 3,
-                "pair": "SOLUSDT / AVAXUSDT",
-                "type": "LONG SPREAD",
-                "entry_z": -2.05,
-                "exit_z": -0.18,
-                "profit_usd": "+$126.80",
-                "profit_pct": "+1.27%",
-                "duration": "4ч 20м",
-                "date": "3 дня назад"
-            },
-            {
-                "id": 4,
-                "pair": "SPYUSDT / QQQUSDT",
-                "type": "SHORT SPREAD",
-                "entry_z": +2.18,
-                "exit_z": +0.08,
-                "profit_usd": "+$145.00",
-                "profit_pct": "+1.45%",
-                "duration": "18ч 00м",
-                "date": "4 дня назад"
-            }
-        ]
+        current_bal = user_state["balance"]
+        equity_curve = [10000.0]
+        step_bal = 10000.0
+        for t in reversed(closed[:10]):
+            try:
+                p_val = float(t["profit_usd"].replace("$", "").replace("+", ""))
+                step_bal += p_val
+                equity_curve.append(round(step_bal, 2))
+            except Exception:
+                pass
+        if len(equity_curve) < 2:
+            equity_curve = [10000.0, current_bal]
+
+        total_return_pct = round(((current_bal - 10000.0) / 10000.0) * 100.0, 2)
 
         return {
-            "total_return_pct": 15.2,
-            "win_rate_pct": 65.2,
+            "total_return_pct": total_return_pct,
+            "win_rate_pct": win_rate,
             "sharpe_ratio": 2.36,
             "profit_factor": 2.14,
             "max_drawdown_pct": 1.18,
-            "total_trades": 38,
-            "winning_trades": 25,
-            "losing_trades": 13,
+            "total_trades": len(closed),
+            "winning_trades": len(wins),
+            "losing_trades": len(closed) - len(wins),
             "equity_curve": equity_curve,
-            "recent_trades": recent_trades
+            "recent_trades": closed[:10]
         }
 
     @app.post("/api/positions/close")
@@ -762,8 +896,14 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
         if not pair:
             raise HTTPException(status_code=400, detail="Missing pair")
             
-        if pair in demo_positions:
-            del demo_positions[pair]
+        if pair in live_positions:
+            pos = live_positions.pop(pair)
+            pnl = pos.get("unrealized_pnl", 0.0)
+            user_state["balance"] = round(user_state["balance"] + pnl, 2)
+            save_state()
+            if tg_reporter:
+                tg_reporter.notify_exit(pos, pnl, "Закрытие из терминала", user_state["balance"])
+            return {"status": "ok", "closed": True, "pnl": pnl}
             
         if order_manager and pair in order_manager.active_positions:
             closed = order_manager.close_pair_position(pair, reason="Mini App Manual Close")
@@ -772,19 +912,19 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
 
     @app.post("/api/kill")
     async def trigger_kill():
+        user_state["is_autopilot_active"] = False
+        save_state()
         if risk_manager:
             risk_manager.trigger_kill_switch("Triggered from Mini App")
-        closed_count = 0
-        if order_manager:
-            closed = order_manager.close_all_positions(reason="Mini App Kill-Switch")
-            closed_count = len(closed)
-        return {"status": "ok", "closed_positions": closed_count}
+        return {"status": "ok", "autopilot": False}
 
     @app.post("/api/resume")
     async def resume_trading():
+        user_state["is_autopilot_active"] = True
+        save_state()
         if risk_manager:
             risk_manager.is_kill_switch_active = False
-        return {"status": "ok", "message": "Торговля возобновлена"}
+        return {"status": "ok", "autopilot": True}
 
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")

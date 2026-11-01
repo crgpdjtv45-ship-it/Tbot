@@ -51,13 +51,17 @@ def main():
         screener=screener
     )
 
-    # FastApi App
+    # FastApi App with Telegram alerts integration
     app = create_app(
         bybit_client=client,
         order_manager=order_manager,
         risk_manager=risk_manager,
-        screener=screener
+        screener=screener,
+        tg_reporter=tg_reporter
     )
+
+    # Connect app state getter to Telegram bot
+    tg_reporter.app_state_getter = getattr(app, "get_state", None)
 
     # Render supplies port via environment variable PORT
     port = int(os.environ.get("PORT", 8000))
