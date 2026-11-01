@@ -63,11 +63,12 @@ class TelegramReporter:
                 self.enabled = False
 
     def _get_tma_url(self) -> str:
-        tma_url = "https://fcae3bee8dbf58.lhr.life"
+        import os
+        tma_url = os.environ.get("RENDER_EXTERNAL_URL", "https://tbot-statarb.onrender.com")
         if CONFIG_URL_PATH.exists():
             try:
                 content = CONFIG_URL_PATH.read_text(encoding="utf-8").strip()
-                if content:
+                if content and not content.endswith(".lhr.life"):
                     tma_url = content
             except Exception:
                 pass

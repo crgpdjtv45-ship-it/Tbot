@@ -84,6 +84,21 @@ def main():
     except Exception as e:
         logger.warning(f"Could not set menu button: {e}")
 
+    # Start Telegram bot polling in background thread if enabled
+    if tg_reporter.enabled and tg_reporter.bot and tg_reporter.dp:
+        def start_telegram_listener():
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            logger.info("🤖 Starting Telegram Bot polling loop in cloud background...")
+            try:
+                loop.run_until_complete(tg_reporter.dp.start_polling(tg_reporter.bot))
+            except Exception as tg_err:
+                logger.error(f"Telegram polling error: {tg_err}")
+
+        tg_thread = threading.Thread(target=start_telegram_listener, daemon=True)
+        tg_thread.start()
+
     # Start FastAPI in main thread
     run_fastapi(app, port)
 

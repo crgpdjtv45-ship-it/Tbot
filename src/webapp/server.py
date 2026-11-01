@@ -383,6 +383,10 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
             raise HTTPException(status_code=404, detail="Index HTML not found")
         return FileResponse(html_file)
 
+    @app.get("/healthz")
+    async def healthz():
+        return {"status": "ok", "app": "Bybit StatArb Institutional Terminal"}
+
     @app.get("/api/status")
     async def get_status():
         balance = client.get_wallet_balance()
