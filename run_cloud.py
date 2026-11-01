@@ -29,10 +29,12 @@ def main():
 
     risk_cfg = cfg.get("risk", {})
     risk_manager = RiskManager(
+        client=client,
         max_open_pairs=risk_cfg.get("max_open_pairs", 3),
         capital_per_pair_pct=risk_cfg.get("capital_per_pair_pct", 20.0),
+        leverage=risk_cfg.get("leverage", 2),
         max_account_drawdown_pct=risk_cfg.get("max_account_drawdown_pct", 10.0),
-        initial_equity=client.get_wallet_balance()
+        slippage_tolerance_pct=risk_cfg.get("slippage_tolerance_pct", 0.2)
     )
 
     order_manager = OrderManager(client=client)
