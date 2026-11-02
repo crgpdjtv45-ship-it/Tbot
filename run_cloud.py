@@ -67,28 +67,39 @@ def main():
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Serving Telegram Mini App on port {port}")
 
-    # Set Telegram Menu button to permanent onrender domain
-    cloud_url = os.environ.get("RENDER_EXTERNAL_URL", "https://tbot-statarb.onrender.com")
+    # Reset Telegram Menu button to standard and register commands
     try:
         import urllib.request, json
         token = tg_cfg.get("bot_token")
         if token:
-            data = json.dumps({
-                "menu_button": {
-                    "type": "web_app",
-                    "text": "Терминал",
-                    "web_app": {"url": cloud_url}
-                }
-            }).encode()
+            # 1. Reset menu button from web_app to default
+            data = json.dumps({"menu_button": {"type": "default"}}).encode()
             req = urllib.request.Request(
                 f"https://api.telegram.org/bot{token}/setChatMenuButton",
                 data=data,
                 headers={"Content-Type": "application/json"}
             )
             urllib.request.urlopen(req, timeout=10)
-            logger.info(f"✅ Set Telegram Menu Button to cloud URL: {cloud_url}")
+            logger.info("✅ Reset Telegram Menu Button to default")
+
+            # 2. Register bot commands in Telegram menu
+            commands_payload = json.dumps({
+                "commands": [
+                    {"command": "start", "description": "Запустить терминал и получить ссылку"},
+                    {"command": "status", "description": "Баланс, открытые позиции и статистика"},
+                    {"command": "trades", "description": "Журнал закрытых сделок и результаты"},
+                    {"command": "stop", "description": "Экстренная остановка всех позиций"}
+                ]
+            }).encode()
+            cmd_req = urllib.request.Request(
+                f"https://api.telegram.org/bot{token}/setMyCommands",
+                data=commands_payload,
+                headers={"Content-Type": "application/json"}
+            )
+            urllib.request.urlopen(cmd_req, timeout=10)
+            logger.info("✅ Registered Telegram commands: /start, /status, /trades, /stop")
     except Exception as e:
-        logger.warning(f"Could not set menu button: {e}")
+        logger.warning(f"Could not configure Telegram menu/commands: {e}")
 
     # Start Telegram bot polling in background thread if enabled
     if tg_reporter.enabled and tg_reporter.bot and tg_reporter.dp:

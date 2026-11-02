@@ -430,6 +430,7 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
             pass
 
     live_positions = {}
+    pair_cooldowns = {}  # Cooldown between trades on the same pair
 
     # System Live Event Logs
     live_event_logs = [
@@ -499,7 +500,11 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                         period = 210.0 + (seed * 150.0) # 3.5 to 6 min cycle
                         wave = math.sin((t_sec / period) * 2 * math.pi + seed * 6.28) * 2.30
                         noise = math.sin((t_sec / 9.0) + seed * 12.0) * 0.18
-                        p["current_z"] = round(wave + noise, 2)
+                        calc_z = round(wave + noise, 2)
+                        if pair_key in live_positions:
+                            p["current_z"] = live_positions[pair_key]["current_z"]
+                        else:
+                            p["current_z"] = calc_z
 
                 # 2. Update PnL of all open positions with real-time dynamic ticking
                 for pos_key, pos in list(live_positions.items()):
@@ -579,6 +584,7 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                             "date": time.strftime("%H:%M")
                         }
                         user_state["closed_trades"].insert(0, trade_record)
+                        pair_cooldowns[pos_key] = time.time() + 180.0
                         save_state()
 
                         clean_name = pos_key.replace("USDT", "")
@@ -597,6 +603,8 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                         if not p.get("enabled", True):
                             continue
                         if pair_key in live_positions:
+                            continue
+                        if time.time() < pair_cooldowns.get(pair_key, 0):
                             continue
 
                         curr_z = p.get("current_z", 0.0)
@@ -804,6 +812,7 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                 "date": "Только что"
             }
             user_state["closed_trades"].insert(0, trade_record)
+            pair_cooldowns[pair_key] = time.time() + 180.0
             save_state()
 
             clean_name = pair_key.replace("USDT", "")
@@ -825,6 +834,25 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                 pnl = pos.get("unrealized_pnl", 0.0)
                 total_closed_pnl += pnl
                 user_state["balance"] = round(user_state["balance"] + pnl, 2)
+                duration_sec = time.time() - pos.get("entry_time", time.time())
+                pnl_pct = pos.get("unrealized_pnl_pct", 0.0)
+                
+                trade_record = {
+                    "id": len(user_state["closed_trades"]) + 1,
+                    "pair": pk,
+                    "sector": active_pair_registry.get(pk, {}).get("sector", "StatArb"),
+                    "type": "LONG SPREAD" if pos.get("side") == 1 else "SHORT SPREAD",
+                    "entry_z": pos.get("entry_z", 0.0),
+                    "exit_z": pos.get("current_z", 0.0),
+                    "profit_usd": f"{'+' if pnl >= 0 else ''}${pnl:.2f}",
+                    "profit_pct": f"{'+' if pnl_pct >= 0 else ''}{pnl_pct:.2f}%",
+                    "pnl_num": round(pnl, 2),
+                    "duration": f"{int(duration_sec // 60)}м {int(duration_sec % 60)}с",
+                    "exit_reason": "Закрытие всех позиций",
+                    "date": time.strftime("%H:%M")
+                }
+                user_state["closed_trades"].insert(0, trade_record)
+                pair_cooldowns[pk] = time.time() + 180.0
                 if tg_reporter:
                     tg_reporter.notify_exit(pos, pnl, "Экстренное закрытие всех позиций", user_state["balance"])
 
