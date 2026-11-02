@@ -67,20 +67,28 @@ def main():
     port = int(os.environ.get("PORT", 8000))
     logger.info(f"Serving Telegram Mini App on port {port}")
 
-    # Reset Telegram Menu button to standard and register commands
+    # Reset Telegram Menu button to standard commands and send chat button
     try:
         import urllib.request, json
         token = tg_cfg.get("bot_token")
+        chat_id = tg_cfg.get("chat_id")
         if token:
-            # 1. Reset menu button from web_app to default
-            data = json.dumps({"menu_button": {"type": "default"}}).encode()
-            req = urllib.request.Request(
-                f"https://api.telegram.org/bot{token}/setChatMenuButton",
-                data=data,
-                headers={"Content-Type": "application/json"}
-            )
-            urllib.request.urlopen(req, timeout=10)
-            logger.info("✅ Reset Telegram Menu Button to default")
+            # 1. Force menu button to commands (removes Mini App button at bottom)
+            for target_payload in [
+                {"menu_button": {"type": "commands"}},
+                {"chat_id": chat_id, "menu_button": {"type": "commands"}}
+            ]:
+                try:
+                    data = json.dumps(target_payload).encode()
+                    req = urllib.request.Request(
+                        f"https://api.telegram.org/bot{token}/setChatMenuButton",
+                        data=data,
+                        headers={"Content-Type": "application/json"}
+                    )
+                    urllib.request.urlopen(req, timeout=10)
+                except Exception as ex:
+                    logger.warning(f"Could not reset menu button: {ex}")
+            logger.info("✅ Replaced bottom Mini App button with commands menu")
 
             # 2. Register bot commands in Telegram menu
             commands_payload = json.dumps({
@@ -98,6 +106,34 @@ def main():
             )
             urllib.request.urlopen(cmd_req, timeout=10)
             logger.info("✅ Registered Telegram commands: /start, /status, /trades, /stop")
+
+            # 3. Send message with direct browser link button to chat
+            if chat_id:
+                msg_payload = json.dumps({
+                    "chat_id": chat_id,
+                    "text": "<b>Bybit StatArb • Торговый терминал</b>\n\nДля перехода в терминал нажмите на кнопку ниже:",
+                    "parse_mode": "HTML",
+                    "reply_markup": {
+                        "inline_keyboard": [
+                            [
+                                {
+                                    "text": "🌐 Открыть сайт терминала",
+                                    "url": "https://tbot-statarb.onrender.com"
+                                }
+                            ]
+                        ]
+                    }
+                }).encode()
+                msg_req = urllib.request.Request(
+                    f"https://api.telegram.org/bot{token}/sendMessage",
+                    data=msg_payload,
+                    headers={"Content-Type": "application/json"}
+                )
+                try:
+                    urllib.request.urlopen(msg_req, timeout=10)
+                    logger.info("✅ Sent message with site button directly to chat")
+                except Exception as ex:
+                    logger.warning(f"Could not send welcome message: {ex}")
     except Exception as e:
         logger.warning(f"Could not configure Telegram menu/commands: {e}")
 

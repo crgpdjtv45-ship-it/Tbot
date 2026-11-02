@@ -81,21 +81,21 @@ class TelegramReporter:
 
     def _reset_menu_button(self):
         try:
-            payload = {"menu_button": {"type": "default"}}
-            req = urllib.request.Request(
-                f"https://api.telegram.org/bot{self.bot_token}/setChatMenuButton",
-                data=json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"}
-            )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                pass
+            for p in [{"menu_button": {"type": "commands"}}, {"chat_id": self.chat_id, "menu_button": {"type": "commands"}}]:
+                req = urllib.request.Request(
+                    f"https://api.telegram.org/bot{self.bot_token}/setChatMenuButton",
+                    data=json.dumps(p).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    pass
         except Exception:
             pass
 
     def _get_main_keyboard(self) -> InlineKeyboardMarkup:
         keyboard = [
             [
-                InlineKeyboardButton(text="🌐 Открыть сайт терминала", url=self._get_tma_url())
+                InlineKeyboardButton(text="🌐 Открыть сайт терминала", url="https://tbot-statarb.onrender.com")
             ]
         ]
         return InlineKeyboardMarkup(inline_keyboard=keyboard)
