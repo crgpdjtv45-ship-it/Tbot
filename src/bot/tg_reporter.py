@@ -62,6 +62,7 @@ class TelegramReporter:
                 self.bot = Bot(token=self.bot_token)
                 self.dp = Dispatcher()
                 self._register_handlers()
+                self._reset_menu_button()
                 logger.info("TelegramReporter успешно инициализирован.")
             except Exception as e:
                 logger.error(f"Ошибка инициализации Telegram Bot: {e}")
@@ -78,10 +79,23 @@ class TelegramReporter:
                 pass
         return tma_url
 
+    def _reset_menu_button(self):
+        try:
+            payload = {"menu_button": {"type": "default"}}
+            req = urllib.request.Request(
+                f"https://api.telegram.org/bot{self.bot_token}/setChatMenuButton",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                pass
+        except Exception:
+            pass
+
     def _get_main_keyboard(self) -> InlineKeyboardMarkup:
         keyboard = [
             [
-                InlineKeyboardButton(text="🚀 Открыть Терминал", web_app=types.WebAppInfo(url=self._get_tma_url()))
+                InlineKeyboardButton(text="🌐 Открыть сайт терминала", url=self._get_tma_url())
             ]
         ]
         return InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -237,46 +251,9 @@ class TelegramReporter:
             await message.reply(welcome_text, reply_markup=self._get_main_keyboard(), parse_mode=ParseMode.HTML)
 
     def notify_entry(self, pos: Dict[str, Any]):
-        if not self.enabled:
-            return
-
-        pair = pos.get("pair", "")
-        clean_name = pair.replace("USDT", "").replace("STOCK", "")
-        side_str = "Short A / Long B" if pos.get("side") == -1 else "Long A / Short B"
-        z = pos.get("entry_z", 0.0)
-        cap = pos.get("capital", 2000.0)
-
-        pa = pos.get("entry_price_a", 0.0)
-        pb = pos.get("entry_price_b", 0.0)
-        qa = pos.get("qty_a", 0.0)
-        qb = pos.get("qty_b", 0.0)
-        syma = pos.get("symbol_a", "").replace("USDT", "")
-        symb = pos.get("symbol_b", "").replace("USDT", "")
-
-        text = (
-            f"<b>[ОРДЕР] Открыта позиция {clean_name}</b>\n\n"
-            f"• <b>Сигнал:</b> Z = {z:+.2f}σ\n"
-            f"• <b>Направление:</b> {side_str}\n"
-            f"• <b>Нога 1:</b> {pos.get('side_a', 'Leg A')} {qa} {syma} (${pa:,.2f})\n"
-            f"• <b>Нога 2:</b> {pos.get('side_b', 'Leg B')} {qb} {symb} (${pb:,.2f})\n"
-            f"• <b>Выделенный объем:</b> ${cap:,.2f} USDT"
-        )
-        self.send_sync_message(text)
+        # Отключено: бот не отправляет автоматических уведомлений в чат
+        return
 
     def notify_exit(self, pos: Dict[str, Any], pnl: float, reason: str, balance: float):
-        if not self.enabled:
-            return
-
-        pair = pos.get("pair", "")
-        clean_name = pair.replace("USDT", "").replace("STOCK", "")
-        pnl_sign = "+" if pnl >= 0 else ""
-        cap = pos.get("capital", 2000.0)
-        pnl_pct = (pnl / cap) * 100.0 if cap > 0 else 0.0
-
-        text = (
-            f"<b>[ЗАКРЫТИЕ] Позиция {clean_name} закрыта</b>\n\n"
-            f"• <b>Результат (P&L):</b> {pnl_sign}${pnl:,.2f} ({pnl_sign}{pnl_pct:.2f}%)\n"
-            f"• <b>Причина:</b> {reason}\n"
-            f"• <b>Баланс депозита:</b> ${balance:,.2f} USDT"
-        )
-        self.send_sync_message(text)
+        # Отключено: бот не отправляет автоматических уведомлений в чат
+        return

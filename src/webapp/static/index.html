@@ -145,25 +145,25 @@
     <div class="grid grid-cols-4 gap-1.5 text-center">
       <div class="inner-card p-2 rounded">
         <div class="text-[9px] text-neutral-500 uppercase tracking-wider">Винрейт</div>
-        <div id="statWinRate" class="text-xs font-bold text-emerald-400 font-mono mt-0.5">87.5%</div>
+        <div id="statWinRate" class="text-xs font-bold text-neutral-400 font-mono mt-0.5">—</div>
       </div>
       <div class="inner-card p-2 rounded">
         <div class="text-[9px] text-neutral-500 uppercase tracking-wider">PF</div>
-        <div id="statProfitFactor" class="text-xs font-bold text-white font-mono mt-0.5">14.0</div>
+        <div id="statProfitFactor" class="text-xs font-bold text-neutral-400 font-mono mt-0.5">—</div>
       </div>
       <div class="inner-card p-2 rounded">
         <div class="text-[9px] text-neutral-500 uppercase tracking-wider">Закрыто</div>
-        <div id="statTotalClosed" class="text-xs font-bold text-neutral-300 font-mono mt-0.5">8</div>
+        <div id="statTotalClosed" class="text-xs font-bold text-neutral-300 font-mono mt-0.5">0</div>
       </div>
       <div class="inner-card p-2 rounded">
         <div class="text-[9px] text-neutral-500 uppercase tracking-wider">Фикс. P&L</div>
-        <div id="statRealizedPnl" class="text-xs font-bold text-emerald-400 font-mono mt-0.5">+$237.20</div>
+        <div id="statRealizedPnl" class="text-xs font-bold text-neutral-400 font-mono mt-0.5">$0.00</div>
       </div>
     </div>
 
     <!-- Таблица последних закрытых сделок -->
     <div class="space-y-1.5 max-h-48 overflow-y-auto pr-0.5" id="tradesTableContainer">
-      <div class="text-center py-3 text-xs text-neutral-500 font-mono">Загрузка журнала сделок...</div>
+      <div class="text-center py-3 text-xs text-neutral-500 font-mono">Нет закрытых сделок. Статистика формируется по факту закрытия позиций.</div>
     </div>
   </div>
 
@@ -524,23 +524,25 @@
 
     function renderTradesJournal(trades, stats) {
       if (stats) {
+        const total = stats.total_trades || 0;
         if (document.getElementById('statWinRate')) {
-          document.getElementById('statWinRate').innerText = `${stats.win_rate}%`;
+          document.getElementById('statWinRate').innerText = total > 0 ? `${stats.win_rate}%` : '—';
         }
         if (document.getElementById('statProfitFactor')) {
-          document.getElementById('statProfitFactor').innerText = `${stats.profit_factor}`;
+          document.getElementById('statProfitFactor').innerText = total > 0 ? `${stats.profit_factor}` : '—';
         }
         if (document.getElementById('statTotalClosed')) {
-          document.getElementById('statTotalClosed').innerText = `${stats.total_trades}`;
+          document.getElementById('statTotalClosed').innerText = `${total}`;
         }
         if (document.getElementById('statRealizedPnl')) {
-          const sign = stats.total_realized_pnl >= 0 ? '+' : '';
+          const pnl = Number(stats.total_realized_pnl || 0);
+          const sign = pnl >= 0 ? '+' : '';
           const el = document.getElementById('statRealizedPnl');
-          el.innerText = `${sign}$${Number(stats.total_realized_pnl).toFixed(2)}`;
-          el.className = `text-xs font-bold font-mono mt-0.5 ${stats.total_realized_pnl >= 0 ? 'text-profit' : 'text-loss'}`;
+          el.innerText = pnl !== 0 ? `${sign}$${pnl.toFixed(2)}` : '$0.00';
+          el.className = `text-xs font-bold font-mono mt-0.5 ${pnl > 0 ? 'text-profit' : (pnl < 0 ? 'text-loss' : 'text-neutral-400')}`;
         }
         if (document.getElementById('journalCountBadge')) {
-          document.getElementById('journalCountBadge').innerText = `${stats.total_trades} сделок`;
+          document.getElementById('journalCountBadge').innerText = `${total} сделок`;
         }
       }
 
@@ -548,7 +550,7 @@
       if (!tableContainer) return;
 
       if (!trades || !trades.length) {
-        tableContainer.innerHTML = '<div class="text-center py-3 text-xs text-neutral-500 font-mono">История закрытых сделок пуста</div>';
+        tableContainer.innerHTML = '<div class="text-center py-3 text-xs text-neutral-500 font-mono">Нет закрытых сделок. Статистика формируется по факту закрытия позиций.</div>';
         return;
       }
 
