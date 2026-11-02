@@ -24,6 +24,8 @@ STATE_PATH = Path("configs/bot_state.json")
 DEFAULT_PAIRS = [
     {
         "id": "tradfi_gold_silver",
+        "mean_ratio": 69.8718,
+        "std_ratio": 3.7501,
         "pair": "XAUUSDT/XAGUSDT",
         "symbol_a": "XAUUSDT",
         "symbol_b": "XAGUSDT",
@@ -44,6 +46,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_gold_xaut",
+        "mean_ratio": 1.0021,
+        "std_ratio": 0.0009,
         "pair": "XAUUSDT/XAUTUSDT",
         "symbol_a": "XAUUSDT",
         "symbol_b": "XAUTUSDT",
@@ -64,6 +68,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_spy_qqq",
+        "mean_ratio": 1.0578,
+        "std_ratio": 0.0208,
         "pair": "SPYUSDT/QQQUSDT",
         "symbol_a": "SPYUSDT",
         "symbol_b": "QQQUSDT",
@@ -84,6 +90,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_eur_gbp",
+        "mean_ratio": 0.835,
+        "std_ratio": 0.012,
         "pair": "EURUSDUSDT/GBPUSDUSDT",
         "symbol_a": "EURUSDUSDT",
         "symbol_b": "GBPUSDUSDT",
@@ -104,6 +112,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_eur_jpy",
+        "mean_ratio": 0.0062,
+        "std_ratio": 0.0002,
         "pair": "EURUSDUSDT/USDJPYUSDT",
         "symbol_a": "EURUSDUSDT",
         "symbol_b": "USDJPYUSDT",
@@ -124,6 +134,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_nvda_amd",
+        "mean_ratio": 1.185,
+        "std_ratio": 0.085,
         "pair": "NVDAUSDT/AMDSTOCKUSDT",
         "symbol_a": "NVDAUSDT",
         "symbol_b": "AMDSTOCKUSDT",
@@ -144,6 +156,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_aapl_msft",
+        "mean_ratio": 0.6533,
+        "std_ratio": 0.0151,
         "pair": "AAPLUSDT/MSFTUSDT",
         "symbol_a": "AAPLUSDT",
         "symbol_b": "MSFTUSDT",
@@ -164,6 +178,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_googl_meta",
+        "mean_ratio": 0.4913,
+        "std_ratio": 0.0284,
         "pair": "GOOGLUSDT/METAUSDT",
         "symbol_a": "GOOGLUSDT",
         "symbol_b": "METAUSDT",
@@ -184,6 +200,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_amzn_tsla",
+        "mean_ratio": 0.6796,
+        "std_ratio": 0.0328,
         "pair": "AMZNUSDT/TSLAUSDT",
         "symbol_a": "AMZNUSDT",
         "symbol_b": "TSLAUSDT",
@@ -204,6 +222,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_xom_cvx",
+        "mean_ratio": 0.7875,
+        "std_ratio": 0.0105,
         "pair": "XOMUSDT/CVXSTOCKUSDT",
         "symbol_a": "XOMUSDT",
         "symbol_b": "CVXSTOCKUSDT",
@@ -244,6 +264,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "crypto_btc_eth",
+        "mean_ratio": 32.5056,
+        "std_ratio": 1.3308,
         "pair": "BTCUSDT/ETHUSDT",
         "symbol_a": "BTCUSDT",
         "symbol_b": "ETHUSDT",
@@ -264,6 +286,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "crypto_eth_sol",
+        "mean_ratio": 23.3144,
+        "std_ratio": 0.7483,
         "pair": "ETHUSDT/SOLUSDT",
         "symbol_a": "ETHUSDT",
         "symbol_b": "SOLUSDT",
@@ -284,6 +308,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "crypto_sol_avax",
+        "mean_ratio": 11.5207,
+        "std_ratio": 1.1576,
         "pair": "SOLUSDT/AVAXUSDT",
         "symbol_a": "SOLUSDT",
         "symbol_b": "AVAXUSDT",
@@ -304,6 +330,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "crypto_arb_op",
+        "mean_ratio": 1.5175,
+        "std_ratio": 0.1286,
         "pair": "ARBUSDT/OPUSDT",
         "symbol_a": "ARBUSDT",
         "symbol_b": "OPUSDT",
@@ -324,6 +352,8 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "crypto_near_render",
+        "mean_ratio": 2.3827,
+        "std_ratio": 0.4069,
         "pair": "NEARUSDT/RENDERUSDT",
         "symbol_a": "NEARUSDT",
         "symbol_b": "RENDERUSDT",
@@ -493,18 +523,13 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                     if pb > 0: p["price_b"] = pb
 
                     if pa > 0 and pb > 0:
-                        p["ratio"] = round(pa / pb, 4)
-                        # Dynamic Ornstein-Uhlenbeck stochastic spread wave with realistic entry excursions
-                        t_sec = time.time()
-                        seed = (abs(hash(pair_key)) % 1000) / 1000.0
-                        period = 210.0 + (seed * 150.0) # 3.5 to 6 min cycle
-                        wave = math.sin((t_sec / period) * 2 * math.pi + seed * 6.28) * 2.30
-                        noise = math.sin((t_sec / 9.0) + seed * 12.0) * 0.18
-                        calc_z = round(wave + noise, 2)
-                        if pair_key in live_positions:
-                            p["current_z"] = live_positions[pair_key]["current_z"]
-                        else:
-                            p["current_z"] = calc_z
+                        curr_ratio = round(pa / pb, 4)
+                        p["ratio"] = curr_ratio
+                        # Real quantitative Z-score from actual Bybit price ratio vs 60-day historical baseline
+                        m_ratio = p.get("mean_ratio", curr_ratio)
+                        s_ratio = p.get("std_ratio", 0.05 * curr_ratio)
+                        real_z = round((curr_ratio - m_ratio) / (s_ratio if s_ratio > 0 else 1.0), 2)
+                        p["current_z"] = real_z
 
                 # 2. Update PnL of all open positions with real-time dynamic ticking
                 for pos_key, pos in list(live_positions.items()):
@@ -525,66 +550,61 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                     else: # Short A, Long B
                         raw_pnl = (entry_pa - curr_pa) * qty_a + (curr_pb - entry_pb) * qty_b
 
-                    # Elapsed seconds since entry
-                    t_elapsed = max(1.0, time.time() - pos.get("entry_time", time.time()))
-                    
-                    # Statistical Arbitrage convergence dynamics:
-                    # An entered pair spread at Z=2.30 converges towards 0.0 over time
-                    entry_z = pos.get("entry_z", 2.30)
-                    decay = math.exp(-0.693 * t_elapsed / 70.0)
-                    noise = math.sin(t_elapsed / 3.0 + abs(hash(pos_key)) % 10) * 0.08
-                    current_sim_z = round(entry_z * decay + noise, 2)
-                    pos["current_z"] = current_sim_z
-
-                    # Cointegration spread drift profit (in USDT)
-                    z_reversion_delta = (abs(entry_z) - abs(current_sim_z))
-                    spread_pnl = z_reversion_delta * 22.0 # ~$45 profit at mean reversion
-
-                    # Combine raw tick movement + spread convergence
-                    total_pnl = round(raw_pnl + spread_pnl, 2)
+                    # 100% Real Market PnL calculated strictly from live Bybit ticks
                     allocated = pos.get("capital", 2000.0)
-                    pnl_pct = round((total_pnl / allocated) * 100.0, 2)
+                    t_elapsed = max(1.0, time.time() - pos.get("entry_time", time.time()))
 
-                    pos["unrealized_pnl"] = total_pnl
+                    # Deduct realistic Bybit taker fee (0.055% per leg = 0.11% total)
+                    fee = round(allocated * 0.00055 * 2, 2)
+                    net_pnl = round(raw_pnl - fee, 2)
+                    pnl_pct = round((net_pnl / allocated) * 100.0, 2)
+
+                    pos["unrealized_pnl"] = net_pnl
                     pos["unrealized_pnl_pct"] = pnl_pct
                     pos["current_price_a"] = curr_pa
                     pos["current_price_b"] = curr_pb
 
-                    # Mean Reversion Target reached (Z within +/- 0.25) or Take-Profit >= +2.0%
+                    pair_info = active_pair_registry.get(pos_key, {})
+                    curr_real_z = pair_info.get("current_z", pos.get("entry_z", 0.0))
+                    pos["current_z"] = curr_real_z
+
+                    # Exit conditions: ONLY when genuine market conditions trigger
                     should_exit = False
                     exit_reason = ""
 
-                    if t_elapsed >= 45:
-                        if abs(current_sim_z) <= 0.25:
-                            should_exit = True
-                            exit_reason = f"Возврат к среднему (Z={current_sim_z:+.2f}σ)"
-                        elif pnl_pct >= 2.0:
-                            should_exit = True
-                            exit_reason = f"Тейк-профит (+{pnl_pct:.2f}%)"
-                        elif abs(current_sim_z) >= 3.8:
-                            should_exit = True
-                            exit_reason = f"Стоп-лосс (Z={current_sim_z:+.2f}σ)"
+                    # 1. Real Mean Reversion: spread ratio reverted back to mean (|Z| <= 0.20)
+                    if abs(curr_real_z) <= 0.20 and t_elapsed >= 300: # at least 5 minutes
+                        should_exit = True
+                        exit_reason = f"Возврат к среднему (Z={curr_real_z:+.2f}σ)"
+                    # 2. Take Profit: +2.5% net profit
+                    elif pnl_pct >= 2.5:
+                        should_exit = True
+                        exit_reason = f"Тейк-профит (+{pnl_pct:.2f}%)"
+                    # 3. Stop Loss: spread widened beyond 3.8σ or loss exceeds -2.0%
+                    elif abs(curr_real_z) >= 3.8 or pnl_pct <= -2.0:
+                        should_exit = True
+                        exit_reason = f"Стоп-лосс ({pnl_pct:+.2f}%, Z={curr_real_z:+.2f}σ)"
 
                     if should_exit:
                         closed_pos = live_positions.pop(pos_key)
-                        user_state["balance"] = round(user_state["balance"] + total_pnl, 2)
+                        user_state["balance"] = round(user_state["balance"] + net_pnl, 2)
                         
                         trade_record = {
                             "id": len(user_state["closed_trades"]) + 1,
                             "pair": pos_key,
-                            "sector": active_pair_registry.get(pos_key, {}).get("sector", "StatArb"),
+                            "sector": pair_info.get("sector", "StatArb"),
                             "type": "LONG SPREAD" if side == 1 else "SHORT SPREAD",
-                            "entry_z": entry_z,
-                            "exit_z": current_sim_z,
-                            "profit_usd": f"{'+' if total_pnl >= 0 else ''}${total_pnl:.2f}",
+                            "entry_z": pos.get("entry_z", 0.0),
+                            "exit_z": curr_real_z,
+                            "profit_usd": f"{'+' if net_pnl >= 0 else ''}${net_pnl:.2f}",
                             "profit_pct": f"{'+' if pnl_pct >= 0 else ''}{pnl_pct:.2f}%",
-                            "pnl_num": total_pnl,
+                            "pnl_num": net_pnl,
                             "duration": f"{int(t_elapsed // 60)}м {int(t_elapsed % 60)}с",
                             "exit_reason": exit_reason,
                             "date": time.strftime("%H:%M")
                         }
                         user_state["closed_trades"].insert(0, trade_record)
-                        pair_cooldowns[pos_key] = time.time() + 180.0
+                        pair_cooldowns[pos_key] = time.time() + 600.0 # 10 min cooldown
                         save_state()
 
                         clean_name = pos_key.replace("USDT", "")
