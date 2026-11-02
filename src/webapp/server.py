@@ -16,6 +16,8 @@ from loguru import logger
 from src.api.bybit_client import BybitClient
 from src.analytics.screener import PairScreener
 from src.utils.helpers import load_yaml_config
+from src.analytics.hedge_ratio import KalmanHedgeRatio
+from src.storage.db_manager import DatabaseManager
 
 CONFIG_PATH = Path("configs/config.yaml")
 STATE_PATH = Path("configs/bot_state.json")
@@ -24,6 +26,7 @@ STATE_PATH = Path("configs/bot_state.json")
 DEFAULT_PAIRS = [
     {
         "id": "tradfi_gold_silver",
+        "target_capital": 3000.0,
         "mean_ratio": 69.8718,
         "std_ratio": 3.7501,
         "pair": "XAUUSDT/XAGUSDT",
@@ -46,6 +49,7 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_gold_xaut",
+        "target_capital": 3200.0,
         "mean_ratio": 1.0021,
         "std_ratio": 0.0009,
         "pair": "XAUUSDT/XAUTUSDT",
@@ -68,6 +72,7 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_spy_qqq",
+        "target_capital": 2800.0,
         "mean_ratio": 1.0578,
         "std_ratio": 0.0208,
         "pair": "SPYUSDT/QQQUSDT",
@@ -134,6 +139,7 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_nvda_amd",
+        "target_capital": 2200.0,
         "mean_ratio": 1.185,
         "std_ratio": 0.085,
         "pair": "NVDAUSDT/AMDSTOCKUSDT",
@@ -156,6 +162,7 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_aapl_msft",
+        "target_capital": 2600.0,
         "mean_ratio": 0.6533,
         "std_ratio": 0.0151,
         "pair": "AAPLUSDT/MSFTUSDT",
@@ -178,6 +185,7 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_googl_meta",
+        "target_capital": 2400.0,
         "mean_ratio": 0.4913,
         "std_ratio": 0.0284,
         "pair": "GOOGLUSDT/METAUSDT",
@@ -200,6 +208,7 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "tradfi_amzn_tsla",
+        "target_capital": 2000.0,
         "mean_ratio": 0.6796,
         "std_ratio": 0.0328,
         "pair": "AMZNUSDT/TSLAUSDT",
@@ -286,6 +295,7 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "crypto_eth_sol",
+        "target_capital": 1800.0,
         "mean_ratio": 23.3144,
         "std_ratio": 0.7483,
         "pair": "ETHUSDT/SOLUSDT",
@@ -308,6 +318,7 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "crypto_sol_avax",
+        "target_capital": 1400.0,
         "mean_ratio": 11.5207,
         "std_ratio": 1.1576,
         "pair": "SOLUSDT/AVAXUSDT",
@@ -330,6 +341,7 @@ DEFAULT_PAIRS = [
     },
     {
         "id": "crypto_arb_op",
+        "target_capital": 1200.0,
         "mean_ratio": 1.5175,
         "std_ratio": 0.1286,
         "pair": "ARBUSDT/OPUSDT",
@@ -436,19 +448,35 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
     # In-memory pair state management
     active_pair_registry = {p["pair"]: dict(p) for p in DEFAULT_PAIRS}
 
+    # Database and Adaptive Kalman Filter Instances
+    db_manager = DatabaseManager()
+    kalman_filters = {p["pair"]: KalmanHedgeRatio() for p in DEFAULT_PAIRS}
+
     # Persistent user bot state
     user_state = {
         "balance": 10000.0,
         "is_autopilot_active": True,
         "closed_trades": []
     }
-    if STATE_PATH.exists():
+    # 1. Restore from SQLite Journal if exists
+    try:
+        db_trades = db_manager.get_trades(limit=100)
+        if db_trades:
+            user_state["closed_trades"] = db_trades
+            stats = db_manager.get_stats()
+            user_state["balance"] = round(10000.0 + stats.get("total_realized_pnl", 0.0), 2)
+    except Exception as e:
+        logger.warning(f"DB restore notice: {e}")
+
+    # 2. Fallback to JSON state file
+    if STATE_PATH.exists() and not user_state["closed_trades"]:
         try:
             with open(STATE_PATH, "r", encoding="utf-8") as f:
                 saved = json.load(f)
                 user_state["balance"] = float(saved.get("balance", 10000.0))
                 user_state["is_autopilot_active"] = bool(saved.get("is_autopilot_active", True))
-                user_state["closed_trades"] = saved.get("closed_trades", [])
+                if saved.get("closed_trades"):
+                    user_state["closed_trades"] = saved.get("closed_trades")
         except Exception:
             pass
 
@@ -525,6 +553,14 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                     if pa > 0 and pb > 0:
                         curr_ratio = round(pa / pb, 4)
                         p["ratio"] = curr_ratio
+
+                        # Online Kalman Filter adaptive hedge ratio beta update
+                        kf = kalman_filters.get(pair_key)
+                        if kf:
+                            k_alpha, k_beta = kf.update(pa, pb)
+                            p["kalman_beta"] = round(k_beta, 4)
+                            p["kalman_alpha"] = round(k_alpha, 4)
+
                         # Real quantitative Z-score from actual Bybit price ratio vs 60-day historical baseline
                         m_ratio = p.get("mean_ratio", curr_ratio)
                         s_ratio = p.get("std_ratio", 0.05 * curr_ratio)
@@ -605,6 +641,11 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                         }
                         user_state["closed_trades"].insert(0, trade_record)
                         pair_cooldowns[pos_key] = time.time() + 600.0 # 10 min cooldown
+                        try:
+                            db_manager.log_trade(trade_record)
+                            db_manager.log_equity_snapshot(user_state["balance"], 0.0, len(live_positions))
+                        except Exception:
+                            pass
                         save_state()
 
                         clean_name = pos_key.replace("USDT", "")
@@ -632,10 +673,16 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                             side = -1 if curr_z >= 2.0 else 1
                             price_a = p.get("price_a", 1.0)
                             price_b = p.get("price_b", 1.0)
-                            capital = 2000.0
+                            capital = p.get("target_capital", 2000.0)
                             leg_capital = capital / 2.0
+                            beta = p.get("kalman_beta", 1.0)
+
                             qty_a = round(leg_capital / price_a, 4 if price_a < 10 else 2)
-                            qty_b = round(leg_capital / price_b, 4 if price_b < 10 else 2)
+                            # Kalman delta-neutral sizing for leg B
+                            if beta > 0:
+                                qty_b = round((qty_a * beta), 4 if price_b < 10 else 2)
+                            else:
+                                qty_b = round(leg_capital / price_b, 4 if price_b < 10 else 2)
 
                             new_pos = {
                                 "pair": pair_key,
@@ -766,11 +813,15 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
         price_b = pair_info.get("price_b", 49.74)
 
         # Allocate $2,000 capital (20% of deposit)
-        capital = 2000.0
+        capital = pair_info.get("target_capital", 2000.0)
         leg_capital = capital / 2.0
+        beta = pair_info.get("kalman_beta", 1.0)
 
         qty_a = round(leg_capital / price_a, 3)
-        qty_b = round(leg_capital / price_b, 2)
+        if beta > 0:
+            qty_b = round(qty_a * beta, 2 if price_b > 10 else 4)
+        else:
+            qty_b = round(leg_capital / price_b, 2)
         entry_z = -2.25 if side == 1 else 2.30
 
         pos = {
@@ -833,6 +884,11 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
             }
             user_state["closed_trades"].insert(0, trade_record)
             pair_cooldowns[pair_key] = time.time() + 180.0
+            try:
+                db_manager.log_trade(trade_record)
+                db_manager.log_equity_snapshot(user_state["balance"], 0.0, len(live_positions))
+            except Exception:
+                pass
             save_state()
 
             clean_name = pair_key.replace("USDT", "")
@@ -873,9 +929,17 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                 }
                 user_state["closed_trades"].insert(0, trade_record)
                 pair_cooldowns[pk] = time.time() + 180.0
+                try:
+                    db_manager.log_trade(trade_record)
+                except Exception:
+                    pass
                 if tg_reporter:
                     tg_reporter.notify_exit(pos, pnl, "Экстренное закрытие всех позиций", user_state["balance"])
 
+            try:
+                db_manager.log_equity_snapshot(user_state["balance"], 0.0, 0)
+            except Exception:
+                pass
             save_state()
             live_event_logs.insert(0, {
                 "time": now_str,
