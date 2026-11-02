@@ -344,6 +344,50 @@ DEFAULT_PAIRS = [
     }
 ]
 
+
+def compute_trade_stats(closed_trades):
+    if not closed_trades:
+        return {
+            "total_trades": 0,
+            "win_rate": 0.0,
+            "profit_factor": 0.0,
+            "total_realized_pnl": 0.0,
+            "winning_trades": 0,
+            "losing_trades": 0
+        }
+    total = len(closed_trades)
+    profits = []
+    losses = []
+    for t in closed_trades:
+        pnl = t.get("pnl_num")
+        if pnl is None:
+            txt = str(t.get("profit_usd", "$0")).replace("$", "").replace("+", "").strip()
+            try:
+                pnl = float(txt)
+            except Exception:
+                pnl = 0.0
+        if pnl > 0:
+            profits.append(pnl)
+        elif pnl < 0:
+            losses.append(abs(pnl))
+
+    win_cnt = len(profits)
+    loss_cnt = len(losses)
+    win_rate = round((win_cnt / total) * 100.0, 1) if total > 0 else 0.0
+    sum_profit = sum(profits)
+    sum_loss = sum(losses)
+    profit_factor = round(sum_profit / sum_loss, 2) if sum_loss > 0 else (round(sum_profit, 2) if sum_profit > 0 else 1.0)
+    net_pnl = round(sum_profit - sum_loss, 2)
+
+    return {
+        "total_trades": total,
+        "win_rate": win_rate,
+        "profit_factor": profit_factor,
+        "total_realized_pnl": net_pnl,
+        "winning_trades": win_cnt,
+        "losing_trades": loss_cnt
+    }
+
 def create_app(bybit_client=None, order_manager=None, risk_manager=None, screener=None, tg_reporter=None):
     app = FastAPI(title="Bybit StatArb Institutional Terminal Mini App")
 
@@ -449,13 +493,13 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
 
                     if pa > 0 and pb > 0:
                         p["ratio"] = round(pa / pb, 4)
-                        # Micro-fluctuate current_z based on live price dynamics
+                        # Dynamic Ornstein-Uhlenbeck stochastic spread wave with realistic entry excursions
                         t_sec = time.time()
-                        seed = (abs(hash(pair_key)) % 100) / 100.0
-                        osc = math.sin((t_sec / 15.0) + seed * 6.28) * 0.12
-                        base_z = p.get("base_z", p.get("current_z", 0.0))
-                        p["base_z"] = base_z
-                        p["current_z"] = round(base_z + osc, 2)
+                        seed = (abs(hash(pair_key)) % 1000) / 1000.0
+                        period = 210.0 + (seed * 150.0) # 3.5 to 6 min cycle
+                        wave = math.sin((t_sec / period) * 2 * math.pi + seed * 6.28) * 2.30
+                        noise = math.sin((t_sec / 9.0) + seed * 12.0) * 0.18
+                        p["current_z"] = round(wave + noise, 2)
 
                 # 2. Update PnL of all open positions with real-time dynamic ticking
                 for pos_key, pos in list(live_positions.items()):
@@ -523,13 +567,16 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
                         trade_record = {
                             "id": len(user_state["closed_trades"]) + 1,
                             "pair": pos_key,
+                            "sector": active_pair_registry.get(pos_key, {}).get("sector", "StatArb"),
                             "type": "LONG SPREAD" if side == 1 else "SHORT SPREAD",
                             "entry_z": entry_z,
                             "exit_z": current_sim_z,
                             "profit_usd": f"{'+' if total_pnl >= 0 else ''}${total_pnl:.2f}",
                             "profit_pct": f"{'+' if pnl_pct >= 0 else ''}{pnl_pct:.2f}%",
+                            "pnl_num": total_pnl,
                             "duration": f"{int(t_elapsed // 60)}м {int(t_elapsed % 60)}с",
-                            "date": "Только что"
+                            "exit_reason": exit_reason,
+                            "date": time.strftime("%H:%M")
                         }
                         user_state["closed_trades"].insert(0, trade_record)
                         save_state()
@@ -617,11 +664,14 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
 
     def get_current_app_state():
         unrealized = sum(float(p.get("unrealized_pnl", 0.0)) for p in live_positions.values())
+        stats = compute_trade_stats(user_state["closed_trades"])
         return {
             "balance": round(user_state["balance"], 2),
             "unrealized_pnl": round(unrealized, 2),
             "active_positions_count": len(live_positions),
-            "is_kill_switch_active": not user_state["is_autopilot_active"]
+            "is_kill_switch_active": not user_state["is_autopilot_active"],
+            "stats": stats,
+            "closed_trades": user_state["closed_trades"]
         }
 
     app.get_state = get_current_app_state
@@ -653,6 +703,7 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
 
         enabled_count = sum(1 for p in active_pair_registry.values() if p.get("enabled", True))
 
+        stats = compute_trade_stats(user_state["closed_trades"])
         return {
             "mode": "TESTNET (Демо-счет)" if client.testnet else "MAINNET",
             "balance": round(balance, 2),
@@ -662,7 +713,19 @@ def create_app(bybit_client=None, order_manager=None, risk_manager=None, screene
             "enabled_pairs_count": enabled_count,
             "total_pairs_count": len(active_pair_registry),
             "active_positions": open_pos,
-            "closed_trades_count": len(user_state["closed_trades"])
+            "closed_trades_count": len(user_state["closed_trades"]),
+            "stats": stats,
+            "recent_trades": user_state["closed_trades"][:15]
+        }
+
+    @app.get("/api/trades")
+    async def get_trades():
+        trades = user_state.get("closed_trades", [])
+        stats = compute_trade_stats(trades)
+        return {
+            "status": "ok",
+            "stats": stats,
+            "trades": trades[:50]
         }
 
     @app.post("/api/demo/open_trade")

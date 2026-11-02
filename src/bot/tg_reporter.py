@@ -146,18 +146,64 @@ class TelegramReporter:
             pnl = state.get("unrealized_pnl", 0.0)
             active_cnt = state.get("active_positions_count", 0)
             is_paused = state.get("is_kill_switch_active", False)
+            stats = state.get("stats", {})
 
             pnl_sign = "+" if pnl >= 0 else ""
             status_text = "На паузе" if is_paused else "Активна"
+            wr = stats.get("win_rate", 0.0)
+            pf = stats.get("profit_factor", 0.0)
+            closed_cnt = stats.get("total_trades", len(state.get("closed_trades", [])))
+            realized_pnl = stats.get("total_realized_pnl", 0.0)
+            realized_sign = "+" if realized_pnl >= 0 else ""
 
             text = (
                 "<b>Текущий статус:</b>\n"
                 f"• <b>Авто-торговля:</b> {status_text}\n"
                 f"• <b>Баланс депозита:</b> ${balance:,.2f} USDT\n"
                 f"• <b>Нереализованный P&L:</b> {pnl_sign}${pnl:,.2f} USDT\n"
+                f"• <b>Зафиксированный P&L:</b> {realized_sign}${realized_pnl:,.2f} USDT\n"
+                f"• <b>Винрейт:</b> {wr}% ({closed_cnt} сделок, PF {pf})\n"
                 f"• <b>Открытых позиций:</b> {active_cnt}\n"
                 f"• <b>Мониторинг инструментов:</b> 16 пар"
             )
+            await message.reply(text, reply_markup=self._get_main_keyboard(), parse_mode=ParseMode.HTML)
+
+        @self.dp.message(Command("trades"))
+        async def trades_handler(message: types.Message):
+            if not self._is_authorized(message.chat.id):
+                return
+
+            state = self.app_state_getter() if self.app_state_getter else {}
+            stats = state.get("stats", {})
+            trades = state.get("closed_trades", [])
+
+            total = stats.get("total_trades", len(trades))
+            wr = stats.get("win_rate", 0.0)
+            pf = stats.get("profit_factor", 0.0)
+            net_pnl = stats.get("total_realized_pnl", 0.0)
+            sign = "+" if net_pnl >= 0 else ""
+
+            text = (
+                "<b>📊 Журнал закрытых сделок (Bybit StatArb):</b>\n"
+                f"• <b>Всего сделок:</b> {total}\n"
+                f"• <b>Винрейт:</b> {wr}%\n"
+                f"• <b>Profit Factor:</b> {pf}\n"
+                f"• <b>Зафиксированный P&L:</b> {sign}${net_pnl:,.2f} USDT\n\n"
+                "<b>Последние результаты:</b>\n"
+            )
+
+            for i, t in enumerate(trades[:6], 1):
+                clean_pair = t.get("pair", "").replace("USDT", "")
+                pnl_str = t.get("profit_usd", "$0")
+                pct_str = t.get("profit_pct", "0%")
+                ez = t.get("entry_z", 0.0)
+                xz = t.get("exit_z", 0.0)
+                dur = t.get("duration", "")
+                ez_str = f"{ez:+.2f}σ" if isinstance(ez, (int, float)) else str(ez)
+                xz_str = f"{xz:+.2f}σ" if isinstance(xz, (int, float)) else str(xz)
+                text += f"{i}. <b>{clean_pair}</b>: <code>{pnl_str} ({pct_str})</code> | Z: {ez_str} → {xz_str} ({dur})\n"
+
+            text += "\n<i>Детальная таблица и динамика доступны в терминале:</i>"
             await message.reply(text, reply_markup=self._get_main_keyboard(), parse_mode=ParseMode.HTML)
 
         @self.dp.message(Command("stop"))
