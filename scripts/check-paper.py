@@ -7,10 +7,11 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--port', type=int, default=8000)
+parser.add_argument('--url', help='Cloud dashboard URL; defaults to local service')
 args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
 token = (root / 'data' / 'dashboard.token').read_text(encoding='ascii').strip()
-base = f'http://127.0.0.1:{args.port}'
+base = args.url.rstrip('/') if args.url else f'http://127.0.0.1:{args.port}'
 
 def get(path, authenticated=True):
     req = urllib.request.Request(base + path, headers={'Authorization': 'Bearer ' + token} if authenticated else {})
