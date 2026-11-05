@@ -1,0 +1,80 @@
+{
+  "rejected_close": {
+    "reported_closed": true,
+    "tracked_positions": 0
+  },
+  "failed_unwind": {
+    "tracked_positions": 0,
+    "requests": 3
+  },
+  "telegram_interface": {
+    "send_message_exists": false,
+    "notify_signal_exists": false,
+    "notify_entry_async": false,
+    "notify_exit_signature": "(self, pos: Dict[str, Any], pnl: float, reason: str, balance: float)"
+  },
+  "anonymous_settings_http_status": 200,
+  "invalid_settings": {
+    "saved_max_open_pairs": -99,
+    "saved_testnet_for_string_false": true,
+    "runtime_max_open_pairs": 3
+  },
+  "telegram_stop_web_state": false,
+  "web_kill_remaining_positions": 1,
+  "manual_entry_while_killed": 2,
+  "manual_close_journal_entries": 0,
+  "unescaped_pair_html_in_log": true,
+  "analytics_without_trades": {
+    "total_return_pct": 0.0,
+    "win_rate_pct": 68.0,
+    "sharpe_ratio": 2.36,
+    "profit_factor": 2.14,
+    "max_drawdown_pct": 1.18,
+    "total_trades": 0,
+    "winning_trades": 0,
+    "losing_trades": 0,
+    "equity_curve": [
+      10000.0,
+      10000.0
+    ],
+    "recent_trades": []
+  },
+  "restart": {
+    "paused_after_restart": false,
+    "positions_after_restart": 0
+  },
+  "journal_501_trades": {
+    "total_trades": 500,
+    "win_rate": 100.0,
+    "profit_factor": 500.0,
+    "total_realized_pnl": 500.0,
+    "winning_trades": 500,
+    "losing_trades": 0
+  },
+  "entries_without_market_data": 1,
+  "worker_exit_errors": [
+    "Error in Bybit background worker: name 'total_pnl' is not defined"
+  ],
+  "metrics_with_unclosed_loss": {
+    "initial_capital": 10000.0,
+    "final_equity": 10000.0,
+    "net_profit": 0.0,
+    "total_return_pct": 0.0,
+    "total_trades": 0,
+    "win_rate_pct": 0.0,
+    "profit_factor": 0.0,
+    "max_drawdown_pct": 0.0,
+    "sharpe_ratio": 0.0,
+    "avg_trade_pnl": 0.0
+  },
+  "existing_synthetic_test": {
+    "first_trade": "2026-01-05 04:00:00",
+    "injected_deviation": "2026-01-05 04:00:00",
+    "first_simulated_bar": "2026-01-05 04:00:00"
+  },
+  "independent_walks": {
+    "screener_cointegrated": true,
+    "screener_p": 0.0,
+    "engle_granger_p": 0.4338171254291661
+  }
+}

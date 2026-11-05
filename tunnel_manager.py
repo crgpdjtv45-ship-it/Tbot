@@ -1,4 +1,5 @@
 import re
+import os
 import sys
 import time
 import subprocess
@@ -35,7 +36,7 @@ def set_telegram_menu_button(token: str, url: str):
         logger.error(f"Не удалось обновить Telegram Menu Button: {e}")
 
 def main():
-    bot_token = "9157590662:AAGjN0hqhnw9bIpy0BkQ0WIOFlKBqghfFyY"
+    bot_token = os.environ.get("TBOT_TELEGRAM_TOKEN", "")
     logger.info("Запуск отказоустойчивого туннеля для Telegram Mini App...")
 
     while True:

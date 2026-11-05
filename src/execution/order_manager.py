@@ -43,7 +43,9 @@ class OrderManager:
             logger.critical(f"LEG B ({symbol_b}) FAILED AFTER LEG A FILLED! Emergency unwind of Leg A triggered!")
             # Emergency Leg-Risk Unwind: Close Leg A immediately
             unwind_side = "Sell" if side_a == "Buy" else "Buy"
-            self.client.place_market_order(symbol_a, unwind_side, qty_a)
+            unwind = self.client.place_market_order(symbol_a, unwind_side, qty_a, reduce_only=True)
+            if not unwind:
+                self.active_positions[pair_key] = {"pair": pair_key, "symbol_a": symbol_a, "symbol_b": symbol_b, "side_a": side_a, "side_b": side_b, "qty_a": qty_a, "qty_b": 0.0, "status": "UNWIND_REQUIRED"}
             return None
             
         # Position successfully opened
@@ -81,8 +83,15 @@ class OrderManager:
         logger.info(f"Closing pair {pair_key} ({reason}): {close_side_a} {pos['qty_a']} {pos['symbol_a']} | {close_side_b} {pos['qty_b']} {pos['symbol_b']}")
         
         # Close both legs
-        self.client.place_market_order(pos["symbol_a"], close_side_a, pos["qty_a"])
-        self.client.place_market_order(pos["symbol_b"], close_side_b, pos["qty_b"])
+        for leg, symbol, side in (("a", pos["symbol_a"], close_side_a), ("b", pos["symbol_b"], close_side_b)):
+            qty = pos["qty_" + leg]
+            if qty > 0:
+                result = self.client.place_market_order(symbol, side, qty, reduce_only=True)
+                if result:
+                    pos["qty_" + leg] = 0.0
+        if pos["qty_a"] > 0 or pos["qty_b"] > 0:
+            pos["status"] = "CLOSE_REQUIRED"
+            return None
         
         closed_record = self.active_positions.pop(pair_key)
         closed_record["exit_time"] = time.time()

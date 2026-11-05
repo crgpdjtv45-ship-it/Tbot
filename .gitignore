@@ -11,3 +11,14 @@ bore.exe
 *.db
 *.db-wal
 *.db-shm
+
+# Local secrets, persistent paper state and logs
+configs/config.yaml
+configs/bot_state.json
+configs/tma_url.txt
+.env
+.env.*
+!.env.example
+data/
+logs/
+.pytest_cache/

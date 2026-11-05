@@ -32,90 +32,35 @@ class PairScreener:
         """
         Analyzes a single candidate pair (symbol_a, symbol_b).
         """
+        from src.runtime import fit_model, PaperSettings
         import time
-        time.sleep(0.3)  # Rate-limit cooldown to avoid Bybit IP burst 403
-        logger.info(f"Analyzing candidate pair {symbol_a} - {symbol_b} ({total_bars} bars, {interval}m)...")
-        
-        # 1. Fetch historical data
-        df_a = self.client.get_historical_klines(symbol_a, interval=interval, total_bars=total_bars)
-        df_b = self.client.get_historical_klines(symbol_b, interval=interval, total_bars=total_bars)
-        
-        if df_a.empty or df_b.empty:
-            logger.warning(f"Insufficient data for {symbol_a} or {symbol_b}")
+        try:
+            settings = PaperSettings(timeframe=str(interval))
+            frames = []
+            for symbol in (symbol_a, symbol_b):
+                frame = self.client.get_historical_klines(symbol, interval=interval, total_bars=total_bars)
+                if frame.empty:
+                    return None
+                frame = frame[["timestamp", "close"]].copy()
+                frame["timestamp"] = pd.to_datetime(frame["timestamp"]).astype("int64") / 1e9
+                frame = frame.loc[frame.timestamp + int(interval) * 60 <= time.time()]
+                frames.append(frame)
+            model = fit_model(*frames, settings)
+            pa, pb = float(frames[0].close.iloc[-1]), float(frames[1].close.iloc[-1])
+            return {
+                "pair": f"{symbol_a}/{symbol_b}", "symbol_a": symbol_a, "symbol_b": symbol_b,
+                "price_a": pa, "price_b": pb, "correlation": model["correlation"],
+                "p_value": model["p_value"], "is_cointegrated": model["is_cointegrated"],
+                "alpha_ols": model["alpha"], "beta_ols": model["beta"],
+                "beta_kalman": model["beta"],  # compatibility alias; this model is fixed OLS
+                "half_life_days": model["half_life"],
+                "half_life_bars": model["half_life"] * 1440 / int(interval) if model["half_life"] else None,
+                "current_z_score": (pa - model["alpha"] - model["beta"] * pb - model["mean"]) / model["std"],
+                "total_bars": min(map(len, frames)), "hedge_ratio_method": "ols",
+            }
+        except Exception as exc:
+            logger.warning("Pair {} / {} unavailable: {}", symbol_a, symbol_b, exc)
             return None
-            
-        # 2. Merge on timestamp to ensure exact synchrony
-        merged = pd.merge(
-            df_a[["timestamp", "close"]].rename(columns={"close": "close_a"}),
-            df_b[["timestamp", "close"]].rename(columns={"close": "close_b"}),
-            on="timestamp",
-            how="inner"
-        ).sort_values("timestamp").reset_index(drop=True)
-        
-        if len(merged) < 100:
-            logger.warning(f"Not enough overlapping bars ({len(merged)}) for {symbol_a}-{symbol_b}")
-            return None
-            
-        price_a = merged["close_a"]
-        price_b = merged["close_b"]
-        
-        # 3. Correlation
-        correlation = float(price_a.corr(price_b))
-        
-        # 4. OLS Hedge Ratio
-        alpha_ols, beta_ols = calculate_ols_hedge_ratio(price_a, price_b)
-        
-        # 5. Kalman Dynamic Hedge Ratio
-        kalman = KalmanHedgeRatio(delta=1e-4, vt=1e-3)
-        kalman_df = kalman.fit_series(price_a, price_b)
-        current_beta_kalman = float(kalman_df["beta"].iloc[-1])
-        current_alpha_kalman = float(kalman_df["alpha"].iloc[-1])
-        
-        # Spread using Kalman
-        spread_series = kalman_df["spread"]
-        
-        # 6. Augmented Dickey-Fuller Cointegration Test on spread
-        # H0: non-stationary (no mean reversion). Low p-value (< 0.05) rejects H0 -> cointegrated!
-        import warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            adf_res = adfuller(spread_series.dropna(), autolag="AIC")
-        adf_stat = float(adf_res[0])
-        p_value = float(adf_res[1])
-        crit_values = adf_res[4]
-        
-        # 7. Ornstein-Uhlenbeck Half-Life
-        half_life_bars = calculate_half_life(spread_series)
-        bar_hours = int(interval) / 60.0 if interval.isdigit() else 1.0
-        half_life_days = (half_life_bars * bar_hours) / 24.0 if np.isfinite(half_life_bars) else float('inf')
-        
-        # 8. Current Z-Score
-        z_scores = calculate_zscore(spread_series, window=z_score_window)
-        current_z_score = float(z_scores.iloc[-1]) if not pd.isna(z_scores.iloc[-1]) else 0.0
-        
-        # Current prices
-        last_price_a = float(price_a.iloc[-1])
-        last_price_b = float(price_b.iloc[-1])
-        
-        is_cointegrated = bool(p_value < 0.05 and half_life_days < 14.0)
-        
-        return {
-            "pair": f"{symbol_a}/{symbol_b}",
-            "symbol_a": symbol_a,
-            "symbol_b": symbol_b,
-            "price_a": last_price_a,
-            "price_b": last_price_b,
-            "correlation": round(correlation, 4),
-            "p_value": round(p_value, 5),
-            "adf_stat": round(adf_stat, 3),
-            "is_cointegrated": is_cointegrated,
-            "beta_ols": round(beta_ols, 4),
-            "beta_kalman": round(current_beta_kalman, 4),
-            "half_life_bars": round(half_life_bars, 1),
-            "half_life_days": round(half_life_days, 2) if np.isfinite(half_life_days) else None,
-            "current_z_score": round(current_z_score, 3),
-            "total_bars": len(merged)
-        }
 
     def screen_pair_list(
         self,

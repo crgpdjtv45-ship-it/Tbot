@@ -1,4 +1,5 @@
 import time
+import uuid
 from typing import Dict, Any, List, Optional
 import pandas as pd
 from pybit.unified_trading import HTTP
@@ -210,31 +211,11 @@ class BybitClient:
             logger.error(f"Error fetching wallet balance: {e}")
         return 0.0
 
-    def place_market_order(self, symbol: str, side: str, qty: float) -> Optional[str]:
-        """
-        Places a market order.
-        side: 'Buy' or 'Sell'
-        """
-        if not self.api_key:
-            logger.warning(f"[SIMULATION] Market {side} {qty} {symbol}")
-            return f"SIM_ORDER_{int(time.time()*1000)}"
-            
-        try:
-            res = self.session.place_order(
-                category=self.category,
-                symbol=symbol,
-                side=side,
-                orderType="Market",
-                qty=str(qty),
-                timeInForce="GTC"
-            )
-            if res.get("retCode") == 0:
-                order_id = res.get("result", {}).get("orderId")
-                logger.info(f"Order placed: {side} {qty} {symbol} | ID: {order_id}")
-                return order_id
-            else:
-                logger.error(f"Order rejected for {symbol}: {res.get('retMsg')}")
-                return None
-        except Exception as e:
-            logger.error(f"Exception placing order for {symbol}: {e}")
-            return None
+    def place_market_order(self, symbol: str, side: str, qty: float, *, reduce_only: bool = False) -> Optional[str]:
+        """Legacy simulation helper. Real orders are disabled until fill reconciliation exists."""
+        if self.api_key:
+            raise RuntimeError("Exchange order submission is disabled. Use the unified PAPER runtime.")
+        if side not in {"Buy", "Sell"} or not __import__('math').isfinite(qty) or qty <= 0:
+            raise ValueError("Invalid simulated order")
+        logger.info("[SIMULATION] {} {} {} reduce_only={}", side, qty, symbol, reduce_only)
+        return "SIM_" + uuid.uuid4().hex

@@ -10,13 +10,15 @@ def calculate_backtest_metrics(
     """
     Computes professional quantitative performance metrics for the backtest.
     """
-    if not trades or equity_curve.empty:
+    if equity_curve.empty:
         return {
             "initial_capital": initial_capital,
             "final_equity": initial_capital,
             "net_profit": 0.0,
             "total_return_pct": 0.0,
             "total_trades": 0,
+            "winning_trades": 0,
+            "losing_trades": 0,
             "win_rate_pct": 0.0,
             "profit_factor": 0.0,
             "max_drawdown_pct": 0.0,
@@ -41,7 +43,7 @@ def calculate_backtest_metrics(
     profit_factor = (gross_profit / gross_loss) if gross_loss > 0 else (999.0 if gross_profit > 0 else 0.0)
     
     # Drawdown
-    running_max = equity_curve.cummax()
+    running_max = equity_curve.cummax().clip(lower=initial_capital)
     drawdown = (equity_curve - running_max) / running_max
     max_drawdown_pct = abs(float(drawdown.min())) * 100.0
     
@@ -49,7 +51,12 @@ def calculate_backtest_metrics(
     returns = equity_curve.pct_change().dropna()
     if len(returns) > 1 and returns.std() > 0:
         # Annualized Sharpe (assuming hourly bars ~ 24*365 = 8760 periods/year)
-        sharpe_ratio = float(np.sqrt(8760) * returns.mean() / returns.std())
+        periods = 8760.
+        if isinstance(equity_curve.index, pd.DatetimeIndex) and len(equity_curve) > 1:
+            hours = equity_curve.index.to_series().diff().dropna().dt.total_seconds().median() / 3600
+            if hours > 0:
+                periods = 8760. / hours
+        sharpe_ratio = float(np.sqrt(periods) * returns.mean() / returns.std())
     else:
         sharpe_ratio = 0.0
         

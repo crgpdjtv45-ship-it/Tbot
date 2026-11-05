@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import sqlite3
 import time
 from pathlib import Path
@@ -16,12 +17,17 @@ class DatabaseManager:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
 
-    def _get_connection(self) -> sqlite3.Connection:
+    @contextmanager
+    def _get_connection(self):
         conn = sqlite3.connect(str(self.db_path), timeout=10.0)
         conn.row_factory = sqlite3.Row
         # Enable Write-Ahead Logging for high concurrency and resilience
         conn.execute("PRAGMA journal_mode=WAL;")
-        return conn
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def _init_db(self):
         with self._get_connection() as conn:
@@ -121,37 +127,17 @@ class DatabaseManager:
 
     def get_stats(self) -> Dict[str, Any]:
         """Calculates exact portfolio statistics from trade history."""
-        trades = self.get_trades(limit=500)
-        total = len(trades)
-        if total == 0:
-            return {
-                "total_trades": 0,
-                "win_rate": 0.0,
-                "profit_factor": 0.0,
-                "total_realized_pnl": 0.0,
-                "winning_trades": 0,
-                "losing_trades": 0
-            }
-
-        profits = [t["pnl_num"] for t in trades if t["pnl_num"] > 0]
-        losses = [abs(t["pnl_num"]) for t in trades if t["pnl_num"] < 0]
-
-        win_cnt = len(profits)
-        loss_cnt = len(losses)
-        win_rate = round((win_cnt / total) * 100.0, 1)
-        sum_profit = sum(profits)
-        sum_loss = sum(losses)
-        pf = round(sum_profit / sum_loss, 2) if sum_loss > 0 else (round(sum_profit, 2) if sum_profit > 0 else 1.0)
-        net_pnl = round(sum_profit - sum_loss, 2)
-
-        return {
-            "total_trades": total,
-            "win_rate": win_rate,
-            "profit_factor": pf,
-            "total_realized_pnl": net_pnl,
-            "winning_trades": win_cnt,
-            "losing_trades": loss_cnt
-        }
+        with self._get_connection() as conn:
+            row = conn.execute("""SELECT COUNT(*) n,
+                COALESCE(SUM(pnl_usd),0) pnl,
+                COALESCE(SUM(CASE WHEN pnl_usd>0 THEN 1 ELSE 0 END),0) wins,
+                COALESCE(SUM(CASE WHEN pnl_usd<0 THEN 1 ELSE 0 END),0) losses,
+                COALESCE(SUM(CASE WHEN pnl_usd>0 THEN pnl_usd ELSE 0 END),0) profit,
+                COALESCE(SUM(CASE WHEN pnl_usd<0 THEN -pnl_usd ELSE 0 END),0) loss
+                FROM closed_trades""").fetchone()
+        return {"total_trades": row["n"], "win_rate": row["wins"] / row["n"] * 100 if row["n"] else 0,
+                "profit_factor": row["profit"] / row["loss"] if row["loss"] else None,
+                "total_realized_pnl": row["pnl"], "winning_trades": row["wins"], "losing_trades": row["losses"]}
 
     def log_equity_snapshot(self, balance: float, unrealized_pnl: float, active_positions: int):
         with self._get_connection() as conn:
